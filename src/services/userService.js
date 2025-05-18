@@ -22,7 +22,7 @@ function sendResetEmail(userEmail, token) {
     return mailjet.post('send', { version: 'v3.1' }).request({
         Messages: [
             {
-                From: { Email: "pothoiz02@gmail.com", Name: "pothoiz" },
+                From: { Email: "futureclass03@gmail.com", Name: "FutureClass" },
                 To: [{ Email: userEmail }],
                 Subject: "Yêu cầu đặt lại mật khẩu",
                 HTMLPart: `<h3>Đặt lại mật khẩu của bạn</h3><p>Nhấn vào <a href="${resetLink}">đây</a> để đặt lại mật khẩu</p>`
@@ -160,7 +160,10 @@ const updateUser = async (email, data) => {
         { email: email }, // Điều kiện tìm kiếm
         { 
           name: data.name, 
-          password: data.password 
+          phone: data.phone,
+          dateOfBirth: data.dateOfBirth,
+          gender: data.gender,
+          address: data.address
         }, // Dữ liệu cần cập nhật
         { new: true } // Tùy chọn: trả về bản ghi đã cập nhật
       );

@@ -126,13 +126,13 @@ routerAPI.get('/username', async (req, res) => {
     }
 });
 
-// API POST để cập nhật username và password
+// API POST để cập nhật thông tin user
 routerAPI.post('/update-user', async (req, res) => {
-    const { name, email, password } = req.body;
+    const { name, email, phone, dateOfBirth, gender, address } = req.body;
 
   // Kiểm tra đầu vào
-  if (!name || !email || !password) {
-    return res.status(400).json({ message: 'Vui lòng cung cấp đầy đủ name, email và password.' });
+  if (!name || !email) {
+    return res.status(400).json({ message: 'Vui lòng cung cấp đầy đủ name và email.' });
   }
 
   try {
@@ -143,12 +143,17 @@ routerAPI.post('/update-user', async (req, res) => {
       return res.status(404).json({ message: 'Không tìm thấy tài khoản với email được cung cấp.' });
     }
 
-    // Cập nhật name và password
-    const updatedUser = await updateUser(email, { name, password });
+    // Cập nhật thông tin người dùng với đầy đủ các trường
+    const updatedUser = await updateUser(email, { 
+      name, 
+      phone, 
+      dateOfBirth, 
+      gender, 
+      address 
+    });
 
     return res.status(200).json({
       message: 'Thông tin tài khoản đã được cập nhật thành công.',
-  
     });
   } catch (error) {
     console.error('Error updating user:', error);
