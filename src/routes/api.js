@@ -3,7 +3,7 @@ const bodyParser = require('body-parser');
 const { createUser, handleLogin, getUser, forgotPassword, resetPassword } = require('../controllers/userController');
 const { findUserByEmail, updateUser } = require('../services/userService');
 const routerAPI = express.Router();
-
+const questionController = require('../controllers/questionController');
  // Middleware để parse JSON và URL-encoded data
 routerAPI.use(express.json());  // Parse application/json
 routerAPI.use(express.urlencoded({ extended: true }));
@@ -15,7 +15,20 @@ routerAPI.get("/", (req, res) => {
 routerAPI.post("/register", createUser);
 routerAPI.post("/login", handleLogin);
 routerAPI.get("/user", getUser);
+// GET tất cả câu hỏi
+routerAPI.get('/questions', questionController.getAll);
 
+// POST tạo câu hỏi mới
+routerAPI.post('/questions', questionController.create);
+
+// PUT cập nhật câu hỏi
+routerAPI.put('/questions/:id', questionController.update);
+
+// DELETE xoá câu hỏi
+routerAPI.delete('/questions/:id', questionController.remove);
+
+// PATCH bật/tắt trạng thái
+routerAPI.patch('/questions/:id/toggle', questionController.toggle);
 // Route quên mật khẩu
 routerAPI.post('/forgot-password', forgotPassword);
 
