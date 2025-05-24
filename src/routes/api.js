@@ -1,6 +1,6 @@
 const express = require('express');
 const bodyParser = require('body-parser');
-const { createUser, handleLogin, getUser, forgotPassword, resetPassword } = require('../controllers/userController');
+const { createUser, handleLogin, getUser, forgotPassword, resetPassword, deleteUser } = require('../controllers/userController');
 const { findUserByEmail, updateUser } = require('../services/userService');
 const routerAPI = express.Router();
 const questionController = require('../controllers/questionController');
@@ -173,4 +173,7 @@ routerAPI.post('/update-user', async (req, res) => {
     return res.status(500).json({ message: 'Đã xảy ra lỗi khi cập nhật tài khoản.' });
   }
 });
+// Route xóa người dùng
+routerAPI.delete('/delete-user', deleteUser);
+
 module.exports = routerAPI;
