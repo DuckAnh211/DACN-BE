@@ -7,7 +7,12 @@ const questionController = require('../controllers/questionController');
  // Middleware để parse JSON và URL-encoded data
 routerAPI.use(express.json());  // Parse application/json
 routerAPI.use(express.urlencoded({ extended: true }));
-
+const { createTeacher, handleTeacherLogin, getTeacher, deleteTeacher } = require('../controllers/teacherController');
+const Teacher = require('../models/teacher');
+const { updateTeacherService } = require('../services/teacherService');
+routerAPI.get("/teacher", getTeacher);
+routerAPI.post("/teacher/register", createTeacher);
+routerAPI.post("/teacher/login", handleTeacherLogin);
 routerAPI.get("/", (req, res) => {
     return res.status(200).json("Hello world api");
 });
@@ -175,5 +180,51 @@ routerAPI.post('/update-user', async (req, res) => {
 });
 // Route xóa người dùng
 routerAPI.delete('/delete-user', deleteUser);
+routerAPI.delete('/delete-teacher', deleteTeacher);
+
+// API POST để cập nhật thông tin giáo viên
+// API POST để cập nhật thông tin giáo viên
+routerAPI.post('/update-teacher', async (req, res) => {
+    const { name, email, phone, dateOfBirth, gender, address, subject, qualification } = req.body;
+
+    // Kiểm tra đầu vào
+    if (!name || !email) {
+        return res.status(400).json({ message: 'Vui lòng cung cấp đầy đủ name và email.' });
+    }
+
+    try {
+        // Tìm giáo viên theo email
+        const teacher = await Teacher.findOne({ email });
+
+        if (!teacher) {
+            return res.status(404).json({ message: 'Không tìm thấy tài khoản giáo viên với email được cung cấp.' });
+        }
+
+        // Cập nhật thông tin giáo viên
+        const updatedTeacher = await updateTeacherService(email, {
+            name,
+            phone,
+            dateOfBirth,
+            gender,
+            address,
+            subject,
+            qualification
+        });
+
+        return res.status(200).json({
+            success: true,
+            message: 'Cập nhật thông tin giáo viên thành công',
+            data: updatedTeacher
+        });
+    } catch (error) {
+        console.error('Lỗi khi cập nhật thông tin giáo viên:', error);
+        return res.status(500).json({
+            success: false,
+            message: 'Đã xảy ra lỗi khi cập nhật thông tin giáo viên'
+        });
+    }
+});
+routerAPI.delete('/delete-user', deleteUser);
+routerAPI.delete('/delete-teacher', deleteTeacher);
 
 module.exports = routerAPI;
