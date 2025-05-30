@@ -10,6 +10,8 @@ routerAPI.use(express.urlencoded({ extended: true }));
 const { createTeacher, handleTeacherLogin, getTeacher, deleteTeacher } = require('../controllers/teacherController');
 const Teacher = require('../models/teacher');
 const { updateTeacherService } = require('../services/teacherService');
+const { createClassroom, getClassrooms, deleteClassroom } = require('../controllers/classroomController');
+const { joinClassroom, getEnrolledClassrooms } = require('../controllers/enrollmentController');
 routerAPI.get("/teacher", getTeacher);
 routerAPI.post("/teacher/register", createTeacher);
 routerAPI.post("/teacher/login", handleTeacherLogin);
@@ -46,71 +48,7 @@ routerAPI.get('/reset-password', (req, res) => {
     }
     // Hiển thị form đơn giản với token
     res.status(200).send(`
-       <!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Reset Password</title>
-    <style>
-        body {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            height: 100vh;
-            background-color: #e2e2e2;
-            margin: 0;
-            font-family: Arial, sans-serif;
-        }
-        .container {
-            text-align: center;
-            background-color: #f0f0f0;
-            padding: 20px;
-            border-radius: 10px;
-            width: 300px;
-        }
-        .logo {
-            width: 200px;
-            height: 200px;
-            margin-bottom: 10px;
-        }
-        h2 {
-            color: #333;
-        }
-        input[type="password"] {
-            width: 93%;
-            padding: 10px;
-            margin: 10px 0;
-            border: 1px solid #ccc;
-            border-radius: 5px;
-        }
-        button {
-            width: 100%;
-            padding: 10px;
-            background-color: #4CAF50;
-            color: white;
-            border: none;
-            border-radius: 5px;
-            cursor: pointer;
-            font-size: 16px;
-        }
-        button:disabled {
-            background-color: #ccc;
-        }
-    </style>
-</head>
-<body>
-    <div class="container">
-        <img src="logo.jpg" alt="Logo" class="logo" />
-        <h2>Quên mật khẩu</h2>
-        <form action="/v1/api/reset-password" method="POST">
-            <input type="hidden" name="token" value="${token}" />
-            <input type="password" name="newPassword" placeholder="Nhập mật khẩu mới" required />
-            <button type="submit">Reset Password</button>
-        </form>
-    </div>
-</body>
-</html>
+       
 
     `);
 });
@@ -227,4 +165,18 @@ routerAPI.post('/update-teacher', async (req, res) => {
 routerAPI.delete('/delete-user', deleteUser);
 routerAPI.delete('/delete-teacher', deleteTeacher);
 
+// Route tạo lớp học mới
+routerAPI.post('/create-classroom', createClassroom);
+
+// Route lấy danh sách lớp học
+routerAPI.get('/classrooms', getClassrooms);
+
+// Route xóa lớp học
+routerAPI.delete('/delete-classroom', deleteClassroom);
+
+// Route để user tham gia lớp học
+routerAPI.post('/join-classroom', joinClassroom);
+
+// Route để lấy danh sách lớp học đã tham gia
+routerAPI.get('/enrolled-classrooms', getEnrolledClassrooms);
 module.exports = routerAPI;
