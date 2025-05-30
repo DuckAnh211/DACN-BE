@@ -1,4 +1,4 @@
-const { createTeacherService, loginTeacherService, getTeacherService, deleteTeacherService } = require("../services/teacherService");
+const { createTeacherService, loginTeacherService, getTeacherService, deleteTeacherService, getTeacherByEmailService } = require("../services/teacherService");
 
 const createTeacher = async (req, res) => {
     try {
@@ -55,9 +55,34 @@ const deleteTeacher = async (req, res) => {
     }
 };
 
+const getTeacherByEmail = async (req, res) => {
+    const email = req.query.email;
+
+    if (!email) {
+        return res.status(400).json({ success: false, message: "Email is required" });
+    }
+
+    try {
+        const result = await getTeacherByEmailService(email);
+        
+        if (!result.success) {
+            return res.status(404).json({ success: false, message: result.message });
+        }
+        
+        return res.status(200).json({
+            success: true,
+            ...result.data
+        });
+    } catch (error) {
+        console.error("Error fetching teacher:", error);
+        return res.status(500).json({ success: false, message: "Internal server error" });
+    }
+};
+
 module.exports = {
     createTeacher,
     handleTeacherLogin,
     getTeacher,
-    deleteTeacher
+    deleteTeacher,
+    getTeacherByEmail
 };

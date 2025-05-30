@@ -6,21 +6,20 @@ const routerAPI = express.Router();
 const questionController = require('../controllers/questionController');
 const examController = require('../controllers/examController');
 
- // Middleware để parse JSON và URL-encoded data
+// Middleware để parse JSON và URL-encoded data
 routerAPI.use(express.json());  // Parse application/json
 routerAPI.use(express.urlencoded({ extended: true }));
-<<<<<<< HEAD
-const { createTeacher, handleTeacherLogin, getTeacher, deleteTeacher } = require('../controllers/teacherController');
+
+const { createTeacher, handleTeacherLogin, getTeacher, deleteTeacher, getTeacherByEmail } = require('../controllers/teacherController');
 const Teacher = require('../models/teacher');
 const { updateTeacherService } = require('../services/teacherService');
 const { createClassroom, getClassrooms, deleteClassroom } = require('../controllers/classroomController');
 const { joinClassroom, getEnrolledClassrooms } = require('../controllers/enrollmentController');
+
 routerAPI.get("/teacher", getTeacher);
 routerAPI.post("/teacher/register", createTeacher);
 routerAPI.post("/teacher/login", handleTeacherLogin);
-=======
 
->>>>>>> 2460e0e070418be08df582c7eb21fb5fc0fcb9f0
 routerAPI.get("/", (req, res) => {
     return res.status(200).json("Hello world api");
 });
@@ -185,4 +184,7 @@ routerAPI.post('/join-classroom', joinClassroom);
 
 // Route để lấy danh sách lớp học đã tham gia
 routerAPI.get('/enrolled-classrooms', getEnrolledClassrooms);
+
+// API để lấy thông tin giáo viên theo email
+routerAPI.get('/teacherinfo', getTeacherByEmail);
 module.exports = routerAPI;

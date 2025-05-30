@@ -121,10 +121,42 @@ const updateTeacherService = async (email, data) => {
     }
 };
 
+const getTeacherByEmailService = async (email) => {
+    try {
+        const teacher = await Teacher.findOne({ email });
+        
+        if (!teacher) {
+            return {
+                success: false,
+                message: "Không tìm thấy giáo viên với email này"
+            };
+        }
+        
+        return {
+            success: true,
+            data: {
+                id: teacher._id,
+                name: teacher.name,
+                email: teacher.email,
+                phone: teacher.phone,
+                dateOfBirth: teacher.dateOfBirth,
+                gender: teacher.gender,
+                address: teacher.address,
+                subject: teacher.subject,
+                qualification: teacher.qualification
+            }
+        };
+    } catch (error) {
+        console.error("Lỗi khi tìm giáo viên:", error);
+        throw error;
+    }
+};
+
 module.exports = {
     createTeacherService,
     loginTeacherService,
     getTeacherService,
     deleteTeacherService,
-    updateTeacherService
+    updateTeacherService,
+    getTeacherByEmailService
 };
