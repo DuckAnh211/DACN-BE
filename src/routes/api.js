@@ -4,10 +4,16 @@ const { createUser, handleLogin, getUser, forgotPassword, resetPassword } = requ
 const { findUserByEmail, updateUser } = require('../services/userService');
 const routerAPI = express.Router();
 const questionController = require('../controllers/questionController');
+const examController = require('../controllers/examController');
+
  // Middleware để parse JSON và URL-encoded data
 routerAPI.use(express.json());  // Parse application/json
 routerAPI.use(express.urlencoded({ extended: true }));
+// Route tạo đề thi
+routerAPI.post('/exam', examController.create);
 
+// Route lấy danh sách đề thi
+routerAPI.get('/exam', examController.getAll);
 routerAPI.get("/", (req, res) => {
     return res.status(200).json("Hello world api");
 });
