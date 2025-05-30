@@ -2,6 +2,8 @@ const express = require('express');
 const bodyParser = require('body-parser');
 const { createUser, handleLogin, getUser, forgotPassword, resetPassword, deleteUser } = require('../controllers/userController');
 const { findUserByEmail, updateUser } = require('../services/userService');
+const { deleteTeacher } = require('../controllers/teacherController');
+
 const routerAPI = express.Router();
 const questionController = require('../controllers/questionController');
 const examController = require('../controllers/examController');
@@ -223,5 +225,9 @@ routerAPI.post('/update-teacher', async (req, res) => {
 });
 routerAPI.delete('/delete-user', deleteUser);
 routerAPI.delete('/delete-teacher', deleteTeacher);
+// Tạo mới đề thi
+routerAPI.post('/exams', examController.create);
 
+// Lấy danh sách tất cả đề thi
+routerAPI.get('/exams', examController.getAll);
 module.exports = routerAPI;
