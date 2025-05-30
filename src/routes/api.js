@@ -1,6 +1,6 @@
 const express = require('express');
 const bodyParser = require('body-parser');
-const { createUser, handleLogin, getUser, forgotPassword, resetPassword } = require('../controllers/userController');
+const { createUser, handleLogin, getUser, forgotPassword, resetPassword, deleteUser } = require('../controllers/userController');
 const { findUserByEmail, updateUser } = require('../services/userService');
 const routerAPI = express.Router();
 const questionController = require('../controllers/questionController');
@@ -9,11 +9,7 @@ const examController = require('../controllers/examController');
  // Middleware để parse JSON và URL-encoded data
 routerAPI.use(express.json());  // Parse application/json
 routerAPI.use(express.urlencoded({ extended: true }));
-// Route tạo đề thi
-routerAPI.post('/exam', examController.create);
 
-// Route lấy danh sách đề thi
-routerAPI.get('/exam', examController.getAll);
 routerAPI.get("/", (req, res) => {
     return res.status(200).json("Hello world api");
 });
@@ -179,4 +175,53 @@ routerAPI.post('/update-user', async (req, res) => {
     return res.status(500).json({ message: 'Đã xảy ra lỗi khi cập nhật tài khoản.' });
   }
 });
+// Route xóa người dùng
+routerAPI.delete('/delete-user', deleteUser);
+routerAPI.delete('/delete-teacher', deleteTeacher);
+
+// API POST để cập nhật thông tin giáo viên
+// API POST để cập nhật thông tin giáo viên
+routerAPI.post('/update-teacher', async (req, res) => {
+    const { name, email, phone, dateOfBirth, gender, address, subject, qualification } = req.body;
+
+    // Kiểm tra đầu vào
+    if (!name || !email) {
+        return res.status(400).json({ message: 'Vui lòng cung cấp đầy đủ name và email.' });
+    }
+
+    try {
+        // Tìm giáo viên theo email
+        const teacher = await Teacher.findOne({ email });
+
+        if (!teacher) {
+            return res.status(404).json({ message: 'Không tìm thấy tài khoản giáo viên với email được cung cấp.' });
+        }
+
+        // Cập nhật thông tin giáo viên
+        const updatedTeacher = await updateTeacherService(email, {
+            name,
+            phone,
+            dateOfBirth,
+            gender,
+            address,
+            subject,
+            qualification
+        });
+
+        return res.status(200).json({
+            success: true,
+            message: 'Cập nhật thông tin giáo viên thành công',
+            data: updatedTeacher
+        });
+    } catch (error) {
+        console.error('Lỗi khi cập nhật thông tin giáo viên:', error);
+        return res.status(500).json({
+            success: false,
+            message: 'Đã xảy ra lỗi khi cập nhật thông tin giáo viên'
+        });
+    }
+});
+routerAPI.delete('/delete-user', deleteUser);
+routerAPI.delete('/delete-teacher', deleteTeacher);
+
 module.exports = routerAPI;

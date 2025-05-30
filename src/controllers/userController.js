@@ -1,4 +1,4 @@
-const { createResetToken, createUserService, loginService, getUserService, sendResetEmail, findUserByEmail, updateUserPassword } = require("../services/userService");
+const { createResetToken, createUserService, loginService, getUserService, sendResetEmail, findUserByEmail, updateUserPassword,deleteUserService  } = require("../services/userService");
 const jwt = require('jsonwebtoken');
 
 const createUser = async (req, res) => {
@@ -246,11 +246,32 @@ try {
 }
 
 };
+// Controller cho xóa người dùng
+const deleteUser = async (req, res) => {
+    const { email } = req.body;
+
+    if (!email) {
+        return res.status(400).json({ success: false, message: "Email cannot be empty" });
+    }
+
+    try {
+        const result = await deleteUserService(email);
+        if (result) {
+            return res.status(200).json({ success: true, message: "User deleted successfully" });
+        } else {
+            return res.status(404).json({ success: false, message: "User not found" });
+        }
+    } catch (error) {
+        console.error("Error deleting user:", error);
+        return res.status(500).json({ success: false, message: "Internal server error" });
+    }
+};
 
 module.exports = {
     createUser,
     handleLogin,
     getUser,
     forgotPassword,
-    resetPassword
+    resetPassword,
+    deleteUser
 };

@@ -175,6 +175,28 @@ const updateUser = async (email, data) => {
       throw error; // Ném lỗi để xử lý bên ngoài
     }
   };
+  // Hàm xóa người dùng
+const deleteUserService = async (email) => {
+    try {
+        const user = await User.findOneAndDelete({ email });
+        if (!user) {
+            return {
+                status: 'error',
+                message: 'Không tìm thấy người dùng'
+            };
+        }
+        return {
+            status: 'success',
+            message: 'Xóa người dùng thành công'
+        };
+    } catch (error) {
+        console.error('Lỗi khi xóa người dùng:', error);
+        return {
+            status: 'error',
+            message: 'Không thể xóa người dùng'
+        };
+    }
+};
 
 module.exports = {
     updateUser,
@@ -184,6 +206,7 @@ module.exports = {
     sendResetEmail,
     findUserByEmail,
     updateUserPassword,
-    createResetToken
+    createResetToken,
+    deleteUserService
 };
 
