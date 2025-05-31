@@ -1,4 +1,4 @@
-const { createClassroomService, getClassroomsService, deleteClassroomService } = require('../services/classroomService');
+const { createClassroomService, getClassroomsService, deleteClassroomService, getClassroomStudentsService } = require('../services/classroomService');
 
 const createClassroom = async (req, res) => {
     try {
@@ -73,8 +73,36 @@ const deleteClassroom = async (req, res) => {
     }
 };
 
+// Thêm controller mới để lấy danh sách học viên của một lớp
+const getClassroomStudents = async (req, res) => {
+    try {
+        const { classCode } = req.params;
+
+        if (!classCode) {
+            return res.status(400).json({
+                success: false,
+                message: 'Vui lòng cung cấp mã lớp học'
+            });
+        }
+
+        const result = await getClassroomStudentsService(classCode);
+        
+        return res.status(200).json({
+            success: true,
+            data: result.data
+        });
+    } catch (error) {
+        console.error('Lỗi khi lấy danh sách học viên:', error);
+        return res.status(500).json({
+            success: false,
+            message: error.message || 'Đã xảy ra lỗi khi lấy danh sách học viên'
+        });
+    }
+};
+
 module.exports = {
     createClassroom,
     getClassrooms,
-    deleteClassroom
+    deleteClassroom,
+    getClassroomStudents
 };

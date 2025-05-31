@@ -1,5 +1,6 @@
 const Classroom = require('../models/classroom');
 const Teacher = require('../models/teacher');
+const User = require('../models/user');
 
 const createClassroomService = async (className, subject, teacherName, classCode) => {
     try {
@@ -75,8 +76,41 @@ const deleteClassroomService = async (classCode) => {
     }
 };
 
+// Thêm hàm mới để lấy danh sách học viên của một lớp
+const getClassroomStudentsService = async (classCode) => {
+    try {
+        // Tìm lớp học theo mã lớp
+        const classroom = await Classroom.findOne({ classCode });
+        if (!classroom) {
+            throw new Error('Không tìm thấy lớp học với mã lớp này');
+        }
+
+        // Tìm tất cả học viên đã đăng ký lớp học này
+        const students = await User.find({
+            enrolledClasses: classroom._id
+        }).select('name email phone dateOfBirth gender address');
+
+        return {
+            success: true,
+            data: {
+                classroom: {
+                    id: classroom._id,
+                    className: classroom.className,
+                    classCode: classroom.classCode,
+                    subject: classroom.subject,
+                    teacherName: classroom.teacherName
+                },
+                students: students
+            }
+        };
+    } catch (error) {
+        throw error;
+    }
+};
+
 module.exports = {
     createClassroomService,
     getClassroomsService,
-    deleteClassroomService
+    deleteClassroomService,
+    getClassroomStudentsService
 };
