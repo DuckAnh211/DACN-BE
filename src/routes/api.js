@@ -9,6 +9,8 @@ const { createClassroom, getClassrooms, deleteClassroom, getClassroomStudents } 
 const { joinClassroom, getEnrolledClassrooms } = require('../controllers/enrollmentController');
 const questionController = require('../controllers/questionController');
 const examController = require('../controllers/examController');
+const lessonController = require('../controllers/lessonController');
+const upload = require('../config/multerConfig');
 
 const routerAPI = express.Router();
 
@@ -191,4 +193,21 @@ routerAPI.delete('/delete-classroom', deleteClassroom);
 routerAPI.post('/join-classroom', joinClassroom);
 routerAPI.get('/enrolled-classrooms', getEnrolledClassrooms);
 routerAPI.get('/classroom-students/:classCode', getClassroomStudents);
+
+// Thêm routes cho bài học
+// Tạo bài học mới (với upload file)
+routerAPI.post('/lessons', upload.single('lessonFile'), lessonController.createLesson);
+
+// Lấy danh sách bài học theo mã lớp
+routerAPI.get('/lessons/classroom/:classCode', lessonController.getLessonsByClassCode);
+
+// Lấy chi tiết bài học
+routerAPI.get('/lessons/:lessonId', lessonController.getLessonById);
+
+// Cập nhật bài học
+routerAPI.put('/lessons/:lessonId', upload.single('lessonFile'), lessonController.updateLesson);
+
+// Xóa bài học
+routerAPI.delete('/lessons/:lessonId', lessonController.deleteLesson);
+
 module.exports = routerAPI;

@@ -38,6 +38,9 @@ configViewEngine(app);
 // serve static client
 app.use(express.static(path.join(__dirname, 'public')));
 
+// Thêm vào file server.js để phục vụ file tĩnh
+app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
+
 const webAPI = express.Router();
 webAPI.get("/", getHomepage);
 
