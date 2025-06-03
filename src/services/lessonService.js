@@ -156,13 +156,92 @@ const deleteLessonService = async (lessonId) => {
   }
 };
 
+// Lấy thông tin file bài học để tải về
+const getDownloadableLessonFileService = async (lessonId) => {
+  try {
+    const lesson = await Lesson.findById(lessonId);
+    
+    if (!lesson) {
+      throw new Error('Không tìm thấy bài học');
+    }
+    
+    if (lesson.status !== 'active') {
+      throw new Error('Bài học không khả dụng');
+    }
+    
+    // Lấy đường dẫn đầy đủ đến file
+    const filePath = path.join(__dirname, '..', lesson.fileUrl);
+    
+    // Kiểm tra xem file có tồn tại không
+    if (!fs.existsSync(filePath)) {
+      throw new Error('File bài học không tồn tại');
+    }
+    
+    return {
+      success: true,
+      filePath,
+      fileName: lesson.fileName,
+      fileType: lesson.fileType
+    };
+  } catch (error) {
+    throw error;
+  }
+};
+
+// Lấy thông tin file PDF bài học để xem trực tiếp
+const getViewableLessonPdfService = async (lessonId) => {
+  try {
+    const lesson = await Lesson.findById(lessonId);
+    
+    if (!lesson) {
+      throw new Error('Không tìm thấy bài học');
+    }
+    
+    if (lesson.status !== 'active') {
+      throw new Error('Bài học không khả dụng');
+    }
+    
+    // Kiểm tra xem file có phải là PDF không
+    if (lesson.fileType !== 'application/pdf') {
+      throw new Error('File không phải định dạng PDF');
+    }
+    
+    // Lấy đường dẫn đầy đủ đến file
+    const filePath = path.join(__dirname, '..', lesson.fileUrl);
+    
+    // Kiểm tra xem file có tồn tại không
+    if (!fs.existsSync(filePath)) {
+      throw new Error('File bài học không tồn tại');
+    }
+    
+    // Tăng số lượt xem (nếu bạn muốn theo dõi)
+    lesson.viewCount = (lesson.viewCount || 0) + 1;
+    await lesson.save();
+    
+    return {
+      success: true,
+      filePath,
+      fileName: lesson.fileName,
+      fileType: lesson.fileType,
+      lessonTitle: lesson.title
+    };
+  } catch (error) {
+    throw error;
+  }
+};
+
 module.exports = {
   createLessonService,
   getLessonsByClassCodeService,
   getLessonByIdService,
   updateLessonService,
-  deleteLessonService
+  deleteLessonService,
+  getDownloadableLessonFileService,
+  getViewableLessonPdfService
 };
+
+
+
 
 
 

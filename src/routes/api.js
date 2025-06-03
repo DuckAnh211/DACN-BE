@@ -195,7 +195,7 @@ routerAPI.get('/enrolled-classrooms', getEnrolledClassrooms);
 routerAPI.get('/classroom-students/:classCode', getClassroomStudents);
 
 // Thêm routes cho bài học
-// Tạo bài học mới (với upload file)
+// Tạo bài học mới
 routerAPI.post('/lessons', upload.single('lessonFile'), lessonController.createLesson);
 
 // Lấy danh sách bài học theo mã lớp
@@ -209,5 +209,11 @@ routerAPI.put('/lessons/:lessonId', upload.single('lessonFile'), lessonControlle
 
 // Xóa bài học
 routerAPI.delete('/lessons/:lessonId', lessonController.deleteLesson);
+
+// Tải về file bài học
+routerAPI.get('/lessons/:lessonId/download', lessonController.downloadLessonFile);
+
+// Xem nội dung file PDF bài học
+routerAPI.get('/lessons/:lessonId/view-pdf', lessonController.viewLessonPdf);
 
 module.exports = routerAPI;

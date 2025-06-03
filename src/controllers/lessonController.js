@@ -3,8 +3,11 @@ const {
   getLessonsByClassCodeService, 
   getLessonByIdService, 
   updateLessonService, 
-  deleteLessonService 
+  deleteLessonService,
+  getDownloadableLessonFileService,
+  getViewableLessonPdfService
 } = require('../services/lessonService');
+const fs = require('fs');
 
 // Tạo bài học mới
 const createLesson = async (req, res) => {
@@ -134,12 +137,99 @@ const deleteLesson = async (req, res) => {
   }
 };
 
+// Tải về file bài học
+const downloadLessonFile = async (req, res) => {
+  try {
+    const { lessonId } = req.params;
+    
+    if (!lessonId) {
+      return res.status(400).json({
+        success: false,
+        message: 'Vui lòng cung cấp ID bài học'
+      });
+    }
+    
+    const result = await getDownloadableLessonFileService(lessonId);
+    
+    // Thiết lập header để tải về file
+    res.setHeader('Content-Disposition', `attachment; filename="${encodeURIComponent(result.fileName)}"`);
+    res.setHeader('Content-Type', result.fileType);
+    
+    // Gửi file cho client
+    return res.download(result.filePath, result.fileName, (err) => {
+      if (err) {
+        console.error('Lỗi khi tải file:', err);
+        // Nếu headers đã được gửi, không thể gửi lỗi JSON
+        if (!res.headersSent) {
+          return res.status(500).json({
+            success: false,
+            message: 'Đã xảy ra lỗi khi tải file'
+          });
+        }
+      }
+    });
+  } catch (error) {
+    console.error('Lỗi khi tải về file bài học:', error);
+    return res.status(500).json({
+      success: false,
+      message: error.message || 'Đã xảy ra lỗi khi tải về file bài học'
+    });
+  }
+};
+
+// Xem nội dung file PDF bài học
+const viewLessonPdf = async (req, res) => {
+  try {
+    const { lessonId } = req.params;
+    
+    if (!lessonId) {
+      return res.status(400).json({
+        success: false,
+        message: 'Vui lòng cung cấp ID bài học'
+      });
+    }
+    
+    const result = await getViewableLessonPdfService(lessonId);
+    
+    // Thiết lập header để hiển thị PDF trong trình duyệt
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader('Content-Disposition', `inline; filename="${encodeURIComponent(result.fileName)}"`);
+    
+    // Đọc file và gửi nội dung
+    const fileStream = fs.createReadStream(result.filePath);
+    fileStream.pipe(res);
+    
+    // Xử lý lỗi stream
+    fileStream.on('error', (err) => {
+      console.error('Lỗi khi đọc file:', err);
+      if (!res.headersSent) {
+        return res.status(500).json({
+          success: false,
+          message: 'Đã xảy ra lỗi khi đọc file'
+        });
+      }
+    });
+  } catch (error) {
+    console.error('Lỗi khi xem file PDF bài học:', error);
+    return res.status(500).json({
+      success: false,
+      message: error.message || 'Đã xảy ra lỗi khi xem file PDF bài học'
+    });
+  }
+};
+
 module.exports = {
   createLesson,
   getLessonsByClassCode,
   getLessonById,
   updateLesson,
-  deleteLesson
+  deleteLesson,
+  downloadLessonFile,
+  viewLessonPdf
 };
+
+
+
+
 
 
