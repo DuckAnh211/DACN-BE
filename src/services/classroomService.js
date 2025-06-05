@@ -108,9 +108,51 @@ const getClassroomStudentsService = async (classCode) => {
     }
 };
 
+// Cập nhật thông tin lớp học (thay đổi giáo viên)
+const updateClassroomService = async (classCode, newTeacherEmail) => {
+  try {
+    // Tìm lớp học theo mã lớp
+    const classroom = await Classroom.findOne({ classCode });
+    if (!classroom) {
+      throw new Error('Không tìm thấy lớp học với mã lớp này');
+    }
+
+    // Tìm giáo viên mới theo email
+    const newTeacher = await Teacher.findOne({ email: newTeacherEmail });
+    if (!newTeacher) {
+      throw new Error('Không tìm thấy giáo viên với email này');
+    }
+
+    // Kiểm tra môn học của giáo viên mới có phù hợp với lớp học không
+    if (classroom.subject !== newTeacher.subject) {
+      throw new Error(`Môn học không khớp với chuyên môn của giáo viên. Giáo viên ${newTeacher.name} dạy môn ${newTeacher.subject}, trong khi lớp học dạy môn ${classroom.subject}`);
+    }
+
+    // Cập nhật thông tin giáo viên cho lớp học
+    classroom.teacher = newTeacher._id;
+    classroom.teacherName = newTeacher.name;
+    
+    // Lưu thay đổi
+    await classroom.save();
+
+    // Trả về thông tin lớp học đã cập nhật
+    const updatedClassroom = await Classroom.findOne({ classCode })
+      .populate('teacher', 'name email subject');
+
+    return {
+      success: true,
+      message: 'Cập nhật giáo viên cho lớp học thành công',
+      data: updatedClassroom
+    };
+  } catch (error) {
+    throw error;
+  }
+};
+
 module.exports = {
-    createClassroomService,
-    getClassroomsService,
-    deleteClassroomService,
-    getClassroomStudentsService
+  createClassroomService,
+  getClassroomsService,
+  deleteClassroomService,
+  getClassroomStudentsService,
+  updateClassroomService
 };

@@ -5,12 +5,13 @@ const { findUserByEmail, updateUser } = require('../services/userService');
 const { createTeacher, handleTeacherLogin, getTeacher, deleteTeacher } = require('../controllers/teacherController');
 const Teacher = require('../models/teacher');
 const { updateTeacherService, getTeacherByEmailService } = require('../services/teacherService');
-const { createClassroom, getClassrooms, deleteClassroom, getClassroomStudents } = require('../controllers/classroomController');
+const { createClassroom, getClassrooms, deleteClassroom, getClassroomStudents, updateClassroom } = require('../controllers/classroomController');
 const { joinClassroom, getEnrolledClassrooms } = require('../controllers/enrollmentController');
 const questionController = require('../controllers/questionController');
 const examController = require('../controllers/examController');
 const lessonController = require('../controllers/lessonController');
 const upload = require('../config/multerConfig');
+const notificationController = require('../controllers/notificationController');
 
 const routerAPI = express.Router();
 
@@ -185,6 +186,7 @@ routerAPI.patch('/questions/:id/toggle', questionController.toggle);
 // Đề thi
 routerAPI.post('/exams', examController.create);
 routerAPI.get('/exams', examController.getAll);
+routerAPI.get('/exams/classroom/:classCode', examController.getExamsByClassCode);
 
 // Lớp học
 routerAPI.post('/create-classroom', createClassroom);
@@ -215,5 +217,21 @@ routerAPI.get('/lessons/:lessonId/download', lessonController.downloadLessonFile
 
 // Xem nội dung file PDF bài học
 routerAPI.get('/lessons/:lessonId/view-pdf', lessonController.viewLessonPdf);
+
+// Thêm routes cho thông báo
+// Tạo thông báo mới
+routerAPI.post('/notifications', notificationController.createNotification);
+
+// Lấy danh sách thông báo theo mã lớp
+routerAPI.get('/notifications/classroom/:classCode', notificationController.getNotificationsByClassCode);
+
+// Đánh dấu thông báo đã đọc
+routerAPI.post('/notifications/:notificationId/read', notificationController.markNotificationAsRead);
+
+// Xóa thông báo
+routerAPI.delete('/notifications/:notificationId', notificationController.deleteNotification);
+
+// Cập nhật thông tin lớp học (thay đổi giáo viên)
+routerAPI.post('/update-classroom', updateClassroom);
 
 module.exports = routerAPI;

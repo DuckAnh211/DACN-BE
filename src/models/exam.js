@@ -6,6 +6,7 @@ const examSchema = new mongoose.Schema({
   duration: { type: Number, required: true },
   grade: String,
   subject: String,
+  classCode: { type: String, required: true }, // Thêm trường classCode
   startTime: Date,
   endTime: Date,
   questionType: String, // "tu_mas" hoặc "upload_pdf"

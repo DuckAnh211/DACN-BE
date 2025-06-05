@@ -1,4 +1,4 @@
-const { createClassroomService, getClassroomsService, deleteClassroomService, getClassroomStudentsService } = require('../services/classroomService');
+const { createClassroomService, getClassroomsService, deleteClassroomService, getClassroomStudentsService, updateClassroomService } = require('../services/classroomService');
 
 const createClassroom = async (req, res) => {
     try {
@@ -100,9 +100,35 @@ const getClassroomStudents = async (req, res) => {
     }
 };
 
+// Cập nhật thông tin lớp học (thay đổi giáo viên)
+const updateClassroom = async (req, res) => {
+    try {
+        const { classCode, newTeacherEmail } = req.body;
+
+        // Validate đầu vào
+        if (!classCode || !newTeacherEmail) {
+            return res.status(400).json({
+                success: false,
+                message: 'Vui lòng cung cấp đầy đủ mã lớp học và email giáo viên mới'
+            });
+        }
+
+        const result = await updateClassroomService(classCode, newTeacherEmail);
+
+        return res.status(200).json(result);
+    } catch (error) {
+        console.error('Lỗi khi cập nhật lớp học:', error);
+        return res.status(500).json({
+            success: false,
+            message: error.message || 'Đã xảy ra lỗi khi cập nhật lớp học'
+        });
+    }
+};
+
 module.exports = {
-    createClassroom,
-    getClassrooms,
-    deleteClassroom,
-    getClassroomStudents
+  createClassroom,
+  getClassrooms,
+  deleteClassroom,
+  getClassroomStudents,
+  updateClassroom
 };
