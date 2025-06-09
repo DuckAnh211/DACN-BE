@@ -12,6 +12,10 @@ const examController = require('../controllers/examController');
 const lessonController = require('../controllers/lessonController');
 const upload = require('../config/multerConfig');
 const notificationController = require('../controllers/notificationController');
+const submissionController = require('../controllers/submissionController');
+const submissionUpload = require('../config/submissionUploadConfig');
+const assignmentController = require('../controllers/assignmentController');
+const assignmentUpload = require('../config/assignmentUploadConfig');
 
 const routerAPI = express.Router();
 
@@ -233,5 +237,49 @@ routerAPI.delete('/notifications/:notificationId', notificationController.delete
 
 // Cập nhật thông tin lớp học (thay đổi giáo viên)
 routerAPI.post('/update-classroom', updateClassroom);
+
+// Thêm routes cho bài nộp của học sinh
+// Nộp bài
+routerAPI.post('/submissions', submissionUpload.single('submissionFile'), submissionController.submitAssignment);
+
+// Lấy danh sách bài nộp theo bài tập (cho giáo viên)
+routerAPI.get('/submissions/assignment/:assignmentId', submissionController.getSubmissionsByAssignment);
+
+// Lấy danh sách bài nộp của học sinh
+routerAPI.get('/submissions/student/:studentEmail', submissionController.getStudentSubmissions);
+
+// Lấy chi tiết bài nộp
+routerAPI.get('/submissions/:submissionId', submissionController.getSubmissionById);
+
+// Tải về file bài nộp
+routerAPI.get('/submissions/:submissionId/download', submissionController.downloadSubmissionFile);
+
+// Đánh giá bài nộp (dành cho giáo viên)
+routerAPI.post('/submissions/:submissionId/grade', submissionController.gradeSubmission);
+
+// Thêm routes cho bài tập
+// Tạo bài tập mới - sử dụng .single() nhưng không bắt buộc
+routerAPI.post('/assignments', assignmentUpload.single('assignmentFile'), assignmentController.createAssignment);
+
+// Lấy danh sách bài tập theo mã lớp
+routerAPI.get('/assignments/class/:classCode', assignmentController.getAssignmentsByClassCode);
+
+// Lấy chi tiết bài tập
+routerAPI.get('/assignments/:assignmentId', assignmentController.getAssignmentById);
+
+// Cập nhật bài tập
+routerAPI.put('/assignments/:assignmentId', assignmentUpload.single('assignmentFile'), assignmentController.updateAssignment);
+
+// Xóa bài tập
+routerAPI.delete('/assignments/:assignmentId', assignmentController.deleteAssignment);
+
+// Tải về file bài tập
+routerAPI.get('/assignments/:assignmentId/download', assignmentController.downloadAssignmentFile);
+
+// Xem nội dung file PDF bài tập
+routerAPI.get('/assignments/:assignmentId/view-pdf', assignmentController.viewAssignmentPdf);
+
+// Kiểm tra trạng thái nộp bài của sinh viên trong một lớp
+routerAPI.get('/submissions/status/:classCode', submissionController.getStudentSubmissionStatus);
 
 module.exports = routerAPI;

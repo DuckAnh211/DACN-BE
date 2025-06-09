@@ -2,8 +2,8 @@ const multer = require('multer');
 const path = require('path');
 const fs = require('fs');
 
-// Tạo thư mục uploads nếu chưa tồn tại
-const uploadDir = path.join(__dirname, '../uploads/lessons');
+// Tạo thư mục uploads/submissions nếu chưa tồn tại
+const uploadDir = path.join(__dirname, '../uploads/submissions');
 if (!fs.existsSync(uploadDir)) {
   fs.mkdirSync(uploadDir, { recursive: true });
 }
@@ -17,13 +17,13 @@ const storage = multer.diskStorage({
     // Tạo tên file duy nhất bằng cách thêm timestamp
     const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
     const fileExt = path.extname(file.originalname);
-    cb(null, file.fieldname + '-' + uniqueSuffix + fileExt);
+    cb(null, 'submission-' + uniqueSuffix + fileExt);
   }
 });
 
 // Lọc file
 const fileFilter = (req, file, cb) => {
-  // Chấp nhận các loại file phổ biến cho bài học
+  // Chấp nhận các loại file phổ biến cho bài nộp
   const allowedTypes = [
     'application/pdf'
   ];
@@ -35,15 +35,15 @@ const fileFilter = (req, file, cb) => {
   }
 };
 
-// Giới hạn kích thước file (50MB)
+// Giới hạn kích thước file (20MB)
 const limits = {
-  fileSize: 50 * 1024 * 1024
+  fileSize: 20 * 1024 * 1024
 };
 
-const upload = multer({ 
+const submissionUpload = multer({ 
   storage: storage,
   fileFilter: fileFilter,
   limits: limits
 });
 
-module.exports = upload;
+module.exports = submissionUpload;

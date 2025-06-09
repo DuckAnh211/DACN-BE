@@ -93,6 +93,7 @@ const getLessonById = async (req, res) => {
 const updateLesson = async (req, res) => {
   try {
     const { lessonId } = req.params;
+    const { title, description, teacherEmail } = req.body;
 
     if (!lessonId) {
       return res.status(400).json({
@@ -101,12 +102,48 @@ const updateLesson = async (req, res) => {
       });
     }
 
-    const result = await updateLessonService(lessonId, req.body, req.file || null);
+    // Kiểm tra quyền chỉnh sửa (cần cung cấp email giáo viên)
+    if (!teacherEmail) {
+      return res.status(400).json({
+        success: false,
+        message: 'Vui lòng cung cấp email giáo viên để xác thực quyền chỉnh sửa'
+      });
+    }
+
+    // Kiểm tra loại file nếu có file mới
+    if (req.file) {
+      const allowedFileTypes = ['application/pdf', 'application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document', 'application/vnd.ms-powerpoint', 'application/vnd.openxmlformats-officedocument.presentationml.presentation'];
+      
+      if (!allowedFileTypes.includes(req.file.mimetype)) {
+        return res.status(400).json({
+          success: false,
+          message: 'Loại file không được hỗ trợ. Vui lòng tải lên file PDF, Word hoặc PowerPoint'
+        });
+      }
+      
+      // Kiểm tra kích thước file (giới hạn 10MB)
+      const maxSize = 10 * 1024 * 1024; // 10MB
+      if (req.file.size > maxSize) {
+        return res.status(400).json({
+          success: false,
+          message: 'Kích thước file vượt quá giới hạn 10MB'
+        });
+      }
+    }
+
+    // Tạo đối tượng chứa dữ liệu cập nhật - không bao gồm status
+    const updateData = {
+      teacherEmail,
+      title,
+      description
+    };
+
+    const result = await updateLessonService(lessonId, updateData, req.file || null);
 
     return res.status(200).json(result);
   } catch (error) {
     console.error('Lỗi khi cập nhật bài học:', error);
-    return res.status(500).json({
+    return res.status(error.message.includes('quyền') ? 403 : 500).json({
       success: false,
       message: error.message || 'Đã xảy ra lỗi khi cập nhật bài học'
     });
@@ -227,6 +264,8 @@ module.exports = {
   downloadLessonFile,
   viewLessonPdf
 };
+
+
 
 
 
