@@ -12,6 +12,7 @@ const examController = require('../controllers/examController');
 const lessonController = require('../controllers/lessonController');
 const upload = require('../config/multerConfig');
 const notificationController = require('../controllers/notificationController');
+const path = require('path');
 
 const routerAPI = express.Router();
 
@@ -186,7 +187,7 @@ routerAPI.patch('/questions/:id/toggle', questionController.toggle);
 // Đề thi
 routerAPI.post('/exams', examController.create);
 routerAPI.get('/exams', examController.getAll);
-routerAPI.get('/exams/classroom/:classCode', examController.getExamsByClassCode);
+routerAPI.delete('/exams/:id', examController.remove);
 
 // Lớp học
 routerAPI.post('/create-classroom', createClassroom);
@@ -233,5 +234,10 @@ routerAPI.delete('/notifications/:notificationId', notificationController.delete
 
 // Cập nhật thông tin lớp học (thay đổi giáo viên)
 routerAPI.post('/update-classroom', updateClassroom);
+
+// Add this route to serve the video meeting page
+routerAPI.get('/meeting', (req, res) => {
+  res.sendFile(path.join(__dirname, '../public/videomeeting.html'));
+});
 
 module.exports = routerAPI;
