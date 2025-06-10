@@ -8,6 +8,7 @@ const {
   getStudentSubmissionStatusService
 } = require('../services/submissionService');
 const fs = require('fs');
+const mongoose = require('mongoose');
 
 // Nộp bài
 const submitAssignment = async (req, res) => {
@@ -50,6 +51,14 @@ const getSubmissionsByAssignment = async (req, res) => {
       return res.status(400).json({
         success: false,
         message: 'Vui lòng cung cấp ID bài tập'
+      });
+    }
+
+    // Validate ObjectId
+    if (!mongoose.Types.ObjectId.isValid(assignmentId)) {
+      return res.status(400).json({
+        success: false,
+        message: 'ID bài tập không hợp lệ'
       });
     }
     

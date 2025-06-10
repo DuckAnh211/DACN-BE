@@ -243,7 +243,7 @@ routerAPI.post('/update-classroom', updateClassroom);
 // Nộp bài
 routerAPI.post('/submissions', submissionUpload.single('submissionFile'), submissionController.submitAssignment);
 
-// Lấy danh sách bài nộp theo bài tập (cho giáo viên)
+// Lấy danh sách bài nộp theo bài tập (cho giáo viên) - Updated format
 routerAPI.get('/submissions/assignment/:assignmentId', submissionController.getSubmissionsByAssignment);
 
 // Lấy danh sách bài nộp của học sinh
