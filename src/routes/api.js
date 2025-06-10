@@ -16,6 +16,7 @@ const submissionController = require('../controllers/submissionController');
 const submissionUpload = require('../config/submissionUploadConfig');
 const assignmentController = require('../controllers/assignmentController');
 const assignmentUpload = require('../config/assignmentUploadConfig');
+const path = require('path');
 
 const routerAPI = express.Router();
 
@@ -190,7 +191,7 @@ routerAPI.patch('/questions/:id/toggle', questionController.toggle);
 // Đề thi
 routerAPI.post('/exams', examController.create);
 routerAPI.get('/exams', examController.getAll);
-routerAPI.get('/exams/classroom/:classCode', examController.getExamsByClassCode);
+routerAPI.delete('/exams/:id', examController.remove);
 
 // Lớp học
 routerAPI.post('/create-classroom', createClassroom);
@@ -281,5 +282,10 @@ routerAPI.get('/assignments/:assignmentId/view-pdf', assignmentController.viewAs
 
 // Kiểm tra trạng thái nộp bài của sinh viên trong một lớp
 routerAPI.get('/submissions/status/:classCode', submissionController.getStudentSubmissionStatus);
+
+// Add this route to serve the video meeting page
+routerAPI.get('/meeting', (req, res) => {
+  res.sendFile(path.join(__dirname, '../public/videomeeting.html'));
+});
 
 module.exports = routerAPI;
