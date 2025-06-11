@@ -8,7 +8,7 @@ const {
   viewAssignmentPdfService
 } = require('../services/assignmentService');
 const fs = require('fs');
-
+const Assignment = require('../models/assignment');
 // Tạo bài tập mới
 const createAssignment = async (req, res) => {
   try {
@@ -219,10 +219,29 @@ const deleteAssignment = async (req, res) => {
         message: 'Vui lòng cung cấp email giáo viên để xác thực quyền xóa'
       });
     }
+
+    // Tìm bài tập để kiểm tra quyền xóa
+    const assignment = await Assignment.findById(assignmentId);
+    if (!assignment) {
+      return res.status(404).json({
+        success: false,
+        message: 'Không tìm thấy bài tập'
+      });
+    }
+
+   
+    // Thực hiện xóa hoàn toàn
+    await Assignment.findByIdAndDelete(assignmentId);
     
-    const result = await deleteAssignmentService(assignmentId, teacherEmail);
+    // Xóa file nếu có
+    if (assignment.filePath) {
+      fs.unlinkSync(assignment.filePath);
+    }
     
-    return res.status(200).json(result);
+    return res.status(200).json({
+      success: true,
+      message: 'Xóa bài tập thành công'
+    });
   } catch (error) {
     console.error('Lỗi khi xóa bài tập:', error);
     return res.status(500).json({

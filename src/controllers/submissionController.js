@@ -3,11 +3,13 @@ const {
   getSubmissionsByAssignmentService,
   getStudentSubmissionsService,
   getSubmissionByIdService,
-  downloadSubmissionFileService, // Sửa tên hàm cho đúng
+  downloadSubmissionFileService, 
   gradeSubmissionService,
   getStudentSubmissionStatusService
 } = require('../services/submissionService');
 const fs = require('fs');
+const path = require('path');
+const Submission = require('../models/submission');
 const mongoose = require('mongoose');
 
 // Nộp bài
@@ -94,6 +96,92 @@ const getStudentSubmissions = async (req, res) => {
     return res.status(500).json({
       success: false,
       message: error.message || 'Đã xảy ra lỗi khi lấy danh sách bài nộp của học sinh'
+    });
+  }
+};
+
+// Xem nội dung file PDF bài nộp
+const viewSubmissionPdf = async (req, res) => {
+  try {
+    const { submissionId } = req.params;
+
+    // Kiểm tra id bài nộp
+    if (!submissionId) {
+      return res.status(400).json({
+        success: false,
+        message: 'Vui lòng cung cấp ID bài nộp'
+      });
+    }
+
+    // Tìm bài nộp trong database
+    const submission = await Submission.findById(submissionId);
+    if (!submission) {
+      return res.status(404).json({
+        success: false,
+        message: 'Không tìm thấy bài nộp'
+      });
+    }
+
+    // Kiểm tra xem có file hay không 
+    if (!submission.fileUrl) {
+      return res.status(404).json({
+        success: false,
+        message: 'Bài nộp không có file đính kèm'
+      });
+    }
+
+    // Kiểm tra loại file có phải PDF không
+    if (submission.fileType !== 'application/pdf') {
+      return res.status(400).json({
+        success: false,
+        message: 'File không phải định dạng PDF'
+      });
+    }
+
+    // Lấy đường dẫn tuyệt đối của file
+   const uploadDir = path.join(process.cwd(), 'src', 'uploads', 'submissions');
+const fileName = path.basename(submission.fileUrl);
+const filePath = path.join(uploadDir, fileName);
+
+console.log('Upload directory:', uploadDir);
+console.log('File name:', fileName);
+console.log('Full file path:', filePath);
+
+    // Tạo thư mục nếu chưa tồn tại
+    if (!fs.existsSync(uploadDir)) {
+      fs.mkdirSync(uploadDir, { recursive: true });
+    }
+
+    // Kiểm tra file có tồn tại không
+    if (!fs.existsSync(filePath)) {
+      console.log('File không tồn tại tại đường dẫn:', filePath);
+      return res.status(404).json({
+        success: false,
+        message: 'File không tồn tại trong hệ thống'
+      });
+    }
+    // Đọc và trả về file PDF
+    const fileStream = fs.createReadStream(filePath);
+    
+    // Xử lý lỗi stream
+    fileStream.on('error', (error) => {
+      console.error('Lỗi khi đọc file:', error);
+      if (!res.headersSent) {
+        return res.status(500).json({
+          success: false,
+          message: 'Lỗi khi đọc file PDF'
+        });
+      }
+    });
+
+    res.setHeader('Content-Type', 'application/pdf');
+    fileStream.pipe(res);
+
+  } catch (error) {
+    console.error('Lỗi khi xem file PDF bài nộp:', error);
+    return res.status(500).json({
+      success: false,
+      message: error.message || 'Đã xảy ra lỗi khi xem file PDF bài nộp'
     });
   }
 };
@@ -226,7 +314,8 @@ module.exports = {
   getSubmissionById,
   downloadSubmissionFile,
   gradeSubmission,
-  getStudentSubmissionStatus
+  getStudentSubmissionStatus,
+  viewSubmissionPdf
 };
 
 

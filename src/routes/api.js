@@ -252,6 +252,9 @@ routerAPI.get('/submissions/student/:studentEmail', submissionController.getStud
 // Lấy chi tiết bài nộp
 routerAPI.get('/submissions/:submissionId', submissionController.getSubmissionById);
 
+// Thêm route xem nội dung file PDF bài nộp
+routerAPI.get('/submissions/:submissionId/view-pdf', submissionController.viewSubmissionPdf);
+
 // Tải về file bài nộp
 routerAPI.get('/submissions/:submissionId/download', submissionController.downloadSubmissionFile);
 
