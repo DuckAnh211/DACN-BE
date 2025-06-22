@@ -307,6 +307,54 @@ const getStudentSubmissionStatus = async (req, res) => {
   }
 };
 
+const deleteSubmission = async (req, res) => {
+  try {
+    const { submissionId } = req.params;
+    const submission = await Submission.findByIdAndDelete(submissionId);
+    if (!submission) {
+      return res.status(404).json({ success: false, message: 'Không tìm thấy bài nộp' });
+    }
+    // Xóa file vật lý nếu cần
+    if (submission.fileUrl && fs.existsSync(path.join(process.cwd(), submission.fileUrl))) {
+      fs.unlinkSync(path.join(process.cwd(), submission.fileUrl));
+    }
+    return res.status(200).json({ success: true, message: 'Xóa bài nộp thành công' });
+  } catch (error) {
+    return res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+const updateSubmission = async (req, res) => {
+  try {
+    const { submissionId } = req.params;
+    const submission = await Submission.findById(submissionId);
+
+    if (!submission) {
+      return res.status(404).json({ success: false, message: 'Không tìm thấy bài nộp' });
+    }
+
+    // Nếu có file mới, xóa file cũ
+    if (req.file) {
+      // Xóa file cũ nếu tồn tại
+      if (submission.fileUrl && fs.existsSync(path.join(process.cwd(), submission.fileUrl))) {
+        fs.unlinkSync(path.join(process.cwd(), submission.fileUrl));
+      }
+      // Cập nhật thông tin file mới
+      submission.fileUrl = `/uploads/submissions/${req.file.filename}`;
+      submission.fileName = req.file.originalname;
+      submission.fileType = req.file.mimetype;
+      submission.fileSize = req.file.size;
+      submission.updatedAt = new Date();
+    }
+
+    await submission.save();
+
+    return res.status(200).json({ success: true, message: 'Cập nhật bài nộp thành công', submission });
+  } catch (error) {
+    return res.status(500).json({ success: false, message: error.message });
+  }
+};
+
 module.exports = {
   submitAssignment,
   getSubmissionsByAssignment,
@@ -315,7 +363,9 @@ module.exports = {
   downloadSubmissionFile,
   gradeSubmission,
   getStudentSubmissionStatus,
-  viewSubmissionPdf
+  viewSubmissionPdf,
+  updateSubmission,
+  deleteSubmission
 };
 
 

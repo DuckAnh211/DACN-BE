@@ -19,6 +19,7 @@ const assignmentUpload = require('../config/assignmentUploadConfig');
 const path = require('path');
 
 const routerAPI = express.Router();
+const multer = require('multer');
 
 // Middleware để parse JSON và URL-encoded data
 routerAPI.use(express.json());  // Parse application/json
@@ -217,9 +218,6 @@ routerAPI.put('/lessons/:lessonId', upload.single('lessonFile'), lessonControlle
 // Xóa bài học
 routerAPI.delete('/lessons/:lessonId', lessonController.deleteLesson);
 
-// Tải về file bài học
-routerAPI.get('/lessons/:lessonId/download', lessonController.downloadLessonFile);
-
 // Xem nội dung file PDF bài học
 routerAPI.get('/lessons/:lessonId/view-pdf', lessonController.viewLessonPdf);
 
@@ -255,11 +253,14 @@ routerAPI.get('/submissions/:submissionId', submissionController.getSubmissionBy
 // Thêm route xem nội dung file PDF bài nộp
 routerAPI.get('/submissions/:submissionId/view-pdf', submissionController.viewSubmissionPdf);
 
-// Tải về file bài nộp
-routerAPI.get('/submissions/:submissionId/download', submissionController.downloadSubmissionFile);
-
 // Đánh giá bài nộp (dành cho giáo viên)
 routerAPI.post('/submissions/:submissionId/grade', submissionController.gradeSubmission);
+
+// Xóa bài nộp
+routerAPI.delete('/submissions/:submissionId', submissionController.deleteSubmission);
+
+// Cập nhật bài nộp (cho phép thay đổi file bài nộp)
+routerAPI.put('/submissions/:submissionId', submissionUpload.single('submissionFile'), submissionController.updateSubmission);
 
 // Thêm routes cho bài tập
 // Tạo bài tập mới - sử dụng .single() nhưng không bắt buộc
@@ -276,9 +277,6 @@ routerAPI.put('/assignments/:assignmentId', assignmentUpload.single('assignmentF
 
 // Xóa bài tập
 routerAPI.delete('/assignments/:assignmentId', assignmentController.deleteAssignment);
-
-// Tải về file bài tập
-routerAPI.get('/assignments/:assignmentId/download', assignmentController.downloadAssignmentFile);
 
 // Xem nội dung file PDF bài tập
 routerAPI.get('/assignments/:assignmentId/view-pdf', assignmentController.viewAssignmentPdf);
