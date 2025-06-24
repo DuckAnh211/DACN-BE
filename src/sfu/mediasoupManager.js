@@ -1,7 +1,11 @@
 const mediasoup = require('mediasoup');
 
-let worker, router;
+// Store workers, routers, rooms, and peers
+let worker;
+let router;
+const rooms = new Map();
 
+// Media codecs configuration
 const mediaCodecs = [
   {
     kind: 'audio',
@@ -13,26 +17,23 @@ const mediaCodecs = [
     kind: 'video',
     mimeType: 'video/VP8',
     clockRate: 90000,
-    parameters: {}
+    parameters: {
+      'x-google-start-bitrate': 1000
+    }
   },
   {
     kind: 'video',
-    mimeType: 'video/VP9',
-    clockRate: 90000,
-    parameters: {}
-  },
-  {
-    kind: 'video',
-    mimeType: 'video/h264',
+    mimeType: 'video/H264',
     clockRate: 90000,
     parameters: {
       'packetization-mode': 1,
-      'profile-level-id': '42e01f',
+      'profile-level-id': '4d0032',
       'level-asymmetry-allowed': 1
     }
   }
 ];
 
+// Initialize mediasoup worker and router
 async function createMediasoupWorker() {
   worker = await mediasoup.createWorker({
     logLevel: 'warn',
@@ -49,12 +50,11 @@ async function createMediasoupWorker() {
   console.log('✅ Mediasoup worker/router ready');
 }
 
-// Store rooms, peers, and their associated resources
-const rooms = new Map();
-
+// Get or create room
 function getOrCreateRoom(roomId) {
   if (!rooms.has(roomId)) {
     rooms.set(roomId, {
+      id: roomId,
       peers: new Map(),
       producers: []
     });
@@ -62,6 +62,7 @@ function getOrCreateRoom(roomId) {
   return rooms.get(roomId);
 }
 
+// Create WebRTC transport
 async function createWebRtcTransport() {
   const transport = await router.createWebRtcTransport({
     listenIps: [
@@ -79,6 +80,7 @@ async function createWebRtcTransport() {
   return transport;
 }
 
+// Handle socket connections
 function handleSocket(socket, io) {
   const { roomId } = socket.handshake.query;
   const room = getOrCreateRoom(roomId);
@@ -90,6 +92,7 @@ function handleSocket(socket, io) {
 
   // Create a peer object to store client-specific data
   const peer = {
+    id: socket.id,
     socket,
     roomId,
     transports: [],
@@ -101,6 +104,10 @@ function handleSocket(socket, io) {
   room.peers.set(socket.id, peer);
 
   // Handle socket events
+  socket.on('joinRoom', (data, callback) => {
+    callback({ rtpCapabilities: router.rtpCapabilities });
+  });
+
   socket.on('getRtpCapabilities', (data, callback) => {
     callback(router.rtpCapabilities);
   });
@@ -148,14 +155,16 @@ function handleSocket(socket, io) {
     room.producers.push({
       id: producer.id,
       socketId: socket.id,
-      kind
+      kind,
+      appData
     });
 
-    // Notify other peers in the room about the new producer
+    // Notify other peers
     socket.to(roomId).emit('new-producer', {
       producerId: producer.id,
       producerSocketId: socket.id,
-      kind
+      kind,
+      appData
     });
 
     producer.on('transportclose', () => {
@@ -163,7 +172,7 @@ function handleSocket(socket, io) {
       removeProducer(producer.id, room);
     });
 
-    callback({ producerId: producer.id });
+    callback({ id: producer.id });
   });
 
   socket.on('consume', async ({ transportId, producerId, rtpCapabilities }, callback) => {
@@ -211,7 +220,8 @@ function handleSocket(socket, io) {
           producerId,
           kind: consumer.kind,
           rtpParameters: consumer.rtpParameters,
-          producerSocketId: producerInfo ? producerInfo.socketId : null
+          producerSocketId: producerInfo ? producerInfo.socketId : null,
+          appData: producerInfo ? producerInfo.appData : null
         }
       });
     } catch (error) {
@@ -227,11 +237,25 @@ function handleSocket(socket, io) {
     }
   });
 
-  socket.on('chat-message', ({ roomId, message }) => {
-    // Broadcast message to all users in the room except sender
-    socket.to(roomId).emit('chat-message', {
-      sender: `User ${socket.id.substring(0, 4)}`,
-      message
+  socket.on('closeProducer', ({ producerId }) => {
+    const producer = peer.producers.find(p => p.id === producerId);
+    if (producer) {
+      producer.close();
+      // Remove from peer's producers
+      peer.producers = peer.producers.filter(p => p.id !== producerId);
+      // Remove from room's producers
+      removeProducer(producerId, room);
+      // Notify other peers
+      socket.to(roomId).emit('producer-closed', { remoteProducerId: producerId });
+    }
+  });
+
+  socket.on('screenShare', ({ sharing, producerId }) => {
+    // Notify other peers about screen sharing status
+    socket.to(roomId).emit('screenShareStatus', {
+      peerId: socket.id,
+      sharing,
+      producerId
     });
   });
 

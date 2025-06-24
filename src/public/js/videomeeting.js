@@ -3,11 +3,12 @@ let socket;
 let device;
 let rtpCapabilities;
 let producerTransport;
-let consumerTransports = [];
+let consumerTransport;
 let videoProducer;
 let audioProducer;
 let screenShareProducer;
 let consumers = [];
+let consumerTransports = []; 
 let isProducing = false;
 
 // DOM elements
