@@ -95,11 +95,28 @@ const updateLessonService = async (lessonId, updateData, file = null) => {
     if (!lesson) {
       throw new Error('Không tìm thấy bài học');
     }
+    
+    // Kiểm tra quyền chỉnh sửa (nếu có teacherEmail trong updateData)
+    if (updateData.teacherEmail) {
+      const teacher = await Teacher.findOne({ email: updateData.teacherEmail });
+      if (!teacher) {
+        throw new Error('Không tìm thấy giáo viên');
+      }
+      
+      // Kiểm tra xem giáo viên có phải là người tạo bài học không
+      if (lesson.teacherId.toString() !== teacher._id.toString()) {
+        throw new Error('Bạn không có quyền chỉnh sửa bài học này');
+      }
+    }
 
-    // Cập nhật thông tin cơ bản
-    lesson.title = updateData.title || lesson.title;
-    lesson.description = updateData.description || lesson.description;
-    lesson.status = updateData.status || lesson.status;
+    // Lưu thông tin cũ để ghi lịch sử nếu cần
+    const oldTitle = lesson.title;
+    const oldDescription = lesson.description;
+    const oldFileName = lesson.fileName;
+
+    // Cập nhật thông tin cơ bản - không bao gồm status
+    if (updateData.title) lesson.title = updateData.title;
+    if (updateData.description !== undefined) lesson.description = updateData.description;
     lesson.updatedAt = Date.now();
 
     // Nếu có file mới, cập nhật thông tin file
@@ -119,10 +136,15 @@ const updateLessonService = async (lessonId, updateData, file = null) => {
 
     await lesson.save();
 
+    // Lấy thông tin bài học đã cập nhật với thông tin giáo viên và lớp học
+    const updatedLesson = await Lesson.findById(lessonId)
+      .populate('teacherId', 'name email')
+      .populate('classroomId', 'className classCode');
+
     return {
       success: true,
       message: 'Cập nhật bài học thành công',
-      data: lesson
+      data: updatedLesson
     };
   } catch (error) {
     throw error;
@@ -239,6 +261,8 @@ module.exports = {
   getDownloadableLessonFileService,
   getViewableLessonPdfService
 };
+
+
 
 
 

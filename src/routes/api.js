@@ -12,9 +12,14 @@ const examController = require('../controllers/examController');
 const lessonController = require('../controllers/lessonController');
 const upload = require('../config/multerConfig');
 const notificationController = require('../controllers/notificationController');
+const submissionController = require('../controllers/submissionController');
+const submissionUpload = require('../config/submissionUploadConfig');
+const assignmentController = require('../controllers/assignmentController');
+const assignmentUpload = require('../config/assignmentUploadConfig');
 const path = require('path');
 
 const routerAPI = express.Router();
+const multer = require('multer');
 
 // Middleware để parse JSON và URL-encoded data
 routerAPI.use(express.json());  // Parse application/json
@@ -189,6 +194,12 @@ routerAPI.post('/exams', examController.create);
 routerAPI.get('/exams', examController.getAll);
 routerAPI.delete('/exams/:id', examController.remove);
 
+// Bài kiểm tra trắc nghiệm 
+// Tạo bài kiểm tra trắc nghiệm 
+routerAPI.post('/quizzes', examController.createQuiz);
+// Lấy danh sách bài kiểm tra theo mã lớp
+routerAPI.get('/quizzes/class/:classCode', examController.getQuizzesByClassCode);
+
 // Lớp học
 routerAPI.post('/create-classroom', createClassroom);
 routerAPI.get('/classrooms', getClassrooms);
@@ -213,9 +224,6 @@ routerAPI.put('/lessons/:lessonId', upload.single('lessonFile'), lessonControlle
 // Xóa bài học
 routerAPI.delete('/lessons/:lessonId', lessonController.deleteLesson);
 
-// Tải về file bài học
-routerAPI.get('/lessons/:lessonId/download', lessonController.downloadLessonFile);
-
 // Xem nội dung file PDF bài học
 routerAPI.get('/lessons/:lessonId/view-pdf', lessonController.viewLessonPdf);
 
@@ -234,6 +242,53 @@ routerAPI.delete('/notifications/:notificationId', notificationController.delete
 
 // Cập nhật thông tin lớp học (thay đổi giáo viên)
 routerAPI.post('/update-classroom', updateClassroom);
+
+// Thêm routes cho bài nộp của học sinh
+// Nộp bài
+routerAPI.post('/submissions', submissionUpload.single('submissionFile'), submissionController.submitAssignment);
+
+// Lấy danh sách bài nộp theo bài tập (cho giáo viên) - Updated format
+routerAPI.get('/submissions/assignment/:assignmentId', submissionController.getSubmissionsByAssignment);
+
+// Lấy danh sách bài nộp của học sinh
+routerAPI.get('/submissions/student/:studentEmail', submissionController.getStudentSubmissions);
+
+// Lấy chi tiết bài nộp
+routerAPI.get('/submissions/:submissionId', submissionController.getSubmissionById);
+
+// Thêm route xem nội dung file PDF bài nộp
+routerAPI.get('/submissions/:submissionId/view-pdf', submissionController.viewSubmissionPdf);
+
+// Đánh giá bài nộp (dành cho giáo viên)
+routerAPI.post('/submissions/:submissionId/grade', submissionController.gradeSubmission);
+
+// Xóa bài nộp
+routerAPI.delete('/submissions/:submissionId', submissionController.deleteSubmission);
+
+// Cập nhật bài nộp (cho phép thay đổi file bài nộp)
+routerAPI.put('/submissions/:submissionId', submissionUpload.single('submissionFile'), submissionController.updateSubmission);
+
+// Thêm routes cho bài tập
+// Tạo bài tập mới - sử dụng .single() nhưng không bắt buộc
+routerAPI.post('/assignments', assignmentUpload.single('assignmentFile'), assignmentController.createAssignment);
+
+// Lấy danh sách bài tập theo mã lớp
+routerAPI.get('/assignments/class/:classCode', assignmentController.getAssignmentsByClassCode);
+
+// Lấy chi tiết bài tập
+routerAPI.get('/assignments/:assignmentId', assignmentController.getAssignmentById);
+
+// Cập nhật bài tập
+routerAPI.put('/assignments/:assignmentId', assignmentUpload.single('assignmentFile'), assignmentController.updateAssignment);
+
+// Xóa bài tập
+routerAPI.delete('/assignments/:assignmentId', assignmentController.deleteAssignment);
+
+// Xem nội dung file PDF bài tập
+routerAPI.get('/assignments/:assignmentId/view-pdf', assignmentController.viewAssignmentPdf);
+
+// Kiểm tra trạng thái nộp bài của sinh viên trong một lớp
+routerAPI.get('/submissions/status/:classCode', submissionController.getStudentSubmissionStatus);
 
 // Add this route to serve the video meeting page
 routerAPI.get('/meeting', (req, res) => {
