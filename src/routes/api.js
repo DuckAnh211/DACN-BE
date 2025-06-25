@@ -205,6 +205,8 @@ routerAPI.get('/quizzes/:quizId', examController.getQuizDetail);
 routerAPI.post('/quiz-results', examController.saveQuizResult);
 // Lấy danh sách kết quả làm quiz của học sinh theo quizId (dành cho giáo viên)
 routerAPI.get('/quiz-results/:quizId', examController.getQuizResultsByQuizId);
+// Xóa bài kiểm tra trắc nghiệm (quiz)
+routerAPI.delete('/quizzes/:quizId', examController.deleteQuiz);
 
 // Lớp học
 routerAPI.post('/create-classroom', createClassroom);

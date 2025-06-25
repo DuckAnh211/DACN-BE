@@ -114,8 +114,22 @@ const getQuizResultsByQuizId = async (req, res) => {
   }
 };
 
+const deleteQuiz = async (req, res) => {
+  try {
+    const { quizId } = req.params;
+    const quiz = await Quiz.findByIdAndDelete(quizId);
+    if (!quiz) {
+      return res.status(404).json({ success: false, message: 'Không tìm thấy bài kiểm tra' });
+    }
+    return res.status(200).json({ success: true, message: 'Xóa bài kiểm tra thành công' });
+  } catch (error) {
+    return res.status(500).json({ success: false, message: error.message });
+  }
+};
+
 module.exports = {
   create,
+  deleteQuiz,
   getQuizResultsByQuizId,
   getQuizzesByClassCode,
   saveQuizResult,
