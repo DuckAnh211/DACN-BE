@@ -1,5 +1,6 @@
 const examService = require('../services/examService');
 const Quiz = require('../models/quiz');
+const QuizResult = require('../models/quizResult');
 
 const create = async (req, res) => {
   try {
@@ -67,9 +68,58 @@ const getQuizzesByClassCode = async (req, res) => {
   }
 };
 
+const getQuizDetail = async (req, res) => {
+  try {
+    const { quizId } = req.params;
+    const quiz = await Quiz.findById(quizId);
+    if (!quiz) {
+      return res.status(404).json({ success: false, message: 'Không tìm thấy bài kiểm tra' });
+    }
+    return res.status(200).json({ success: true, quiz });
+  } catch (error) {
+    return res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+const saveQuizResult = async (req, res) => {
+  try {
+    const { quizId, studentId, studentEmail, score } = req.body;
+
+    if (!quizId || !studentId || !studentEmail || typeof score !== 'number') {
+      return res.status(400).json({ success: false, message: 'Thiếu thông tin bắt buộc.' });
+    }
+
+    const quizResult = new QuizResult({
+      quizId,
+      studentId,
+      studentEmail,
+      score
+    });
+
+    await quizResult.save();
+
+    return res.status(201).json({ success: true, message: 'Lưu kết quả thành công', quizResult });
+  } catch (error) {
+    return res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+const getQuizResultsByQuizId = async (req, res) => {
+  try {
+    const { quizId } = req.params;
+    const results = await QuizResult.find({ quizId }).populate('studentId', 'name email');
+    return res.status(200).json({ success: true, results });
+  } catch (error) {
+    return res.status(500).json({ success: false, message: error.message });
+  }
+};
+
 module.exports = {
   create,
+  getQuizResultsByQuizId,
   getQuizzesByClassCode,
+  saveQuizResult,
+  getQuizDetail,
   createQuiz,
   getAll,
   remove,
