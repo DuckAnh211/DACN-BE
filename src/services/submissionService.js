@@ -286,10 +286,12 @@ const getStudentSubmissionStatusService = async (classCode, studentEmail) => {
           isLate: submission.status === 'late',
           grade: submission.grade,
           isGraded: submission.isGraded,
-          status: submission.status
+          status: submission.status,
+          feedback: submission.feedback || null
         } : {
           submitted: false,
-          isLate: new Date() > new Date(assignment.dueDate)
+          isLate: new Date() > new Date(assignment.dueDate),
+          feedback: null
         }
       };
     });

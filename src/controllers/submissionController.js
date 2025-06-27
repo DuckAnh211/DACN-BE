@@ -324,6 +324,7 @@ const deleteSubmission = async (req, res) => {
   }
 };
 
+// Hàm cập nhật bài nộp
 const updateSubmission = async (req, res) => {
   try {
     const { submissionId } = req.params;
