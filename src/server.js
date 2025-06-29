@@ -35,7 +35,7 @@ const io = socketIo(server, {
 
 // Configure CORS for Express
 app.use(cors({
-  origin: ['http://localhost:5500', 'http://192.168.1.26:5500'],
+  origin: ['http://localhost:5173', 'http://192.168.1.26:5173'],
   credentials: true
 }));
 

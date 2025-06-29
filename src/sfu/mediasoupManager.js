@@ -82,34 +82,50 @@ async function createWebRtcTransport() {
 
 // Handle socket connections
 function handleSocket(socket, io) {
-  const { roomId } = socket.handshake.query;
+  const { roomId, userName } = socket.handshake.query;
   const room = getOrCreateRoom(roomId);
-  
+
   console.log(`🔌 New socket connected: ${socket.id} in room ${roomId}`);
 
-  // Join the socket.io room
   socket.join(roomId);
 
-  // Create a peer object to store client-specific data
   const peer = {
     id: socket.id,
     socket,
     roomId,
     transports: [],
     producers: [],
-    consumers: []
+    consumers: [],
+    name: userName || 'Ẩn danh'
   };
-  
-  // Add peer to room
-  room.peers.set(socket.id, peer);
 
-  // Handle socket events
-  socket.on('joinRoom', (data, callback) => {
-    callback({ rtpCapabilities: router.rtpCapabilities });
+  room.peers.set(socket.id, peer);
+  const existingProducers = room.producers
+    .filter(p => p.socketId !== socket.id)
+    .map(p => ({
+      producerId: p.id,
+      producerSocketId: p.socketId,
+      kind: p.kind,
+      appData: p.appData
+    }));
+  if (existingProducers.length > 0) {
+    socket.emit('existingProducers', existingProducers);
+  }
+
+  socket.on('joinRoom', ({ name }, callback) => {
+    peer.name = name;
+    if (typeof callback === 'function') {
+      callback({ rtpCapabilities: router.rtpCapabilities });
+    }
+    io.to(roomId).emit('updateParticipants', getParticipants(room));
   });
 
   socket.on('getRtpCapabilities', (data, callback) => {
-    callback(router.rtpCapabilities);
+    if (typeof callback === 'function') {
+      callback(router.rtpCapabilities);
+    } else {
+      console.warn('Client did not provide callback for getRtpCapabilities');
+    }
   });
 
   socket.on('createWebRtcTransport', async ({ sender }, callback) => {
@@ -117,49 +133,40 @@ function handleSocket(socket, io) {
       const transport = await createWebRtcTransport();
       peer.transports.push(transport);
 
-      callback({
-        params: {
-          id: transport.id,
-          iceParameters: transport.iceParameters,
-          iceCandidates: transport.iceCandidates,
-          dtlsParameters: transport.dtlsParameters
-        }
-      });
+      if (typeof callback === 'function') {
+        callback({
+          params: {
+            id: transport.id,
+            iceParameters: transport.iceParameters,
+            iceCandidates: transport.iceCandidates,
+            dtlsParameters: transport.dtlsParameters
+          }
+        });
+      }
     } catch (error) {
       console.error('Error creating WebRTC transport:', error);
-      callback({ params: { error: error.message } });
+      if (typeof callback === 'function') {
+        callback({ params: { error: error.message } });
+      }
     }
   });
 
   socket.on('transport-connect', async ({ transportId, dtlsParameters }) => {
     const transport = peer.transports.find(t => t.id === transportId);
-    if (transport) {
-      await transport.connect({ dtlsParameters });
-    }
+    if (transport) await transport.connect({ dtlsParameters });
   });
 
   socket.on('transport-produce', async ({ transportId, kind, rtpParameters, appData }, callback) => {
     const transport = peer.transports.find(t => t.id === transportId);
     if (!transport) {
-      callback({ error: 'Transport not found' });
+      if (typeof callback === 'function') callback({ error: 'Transport not found' });
       return;
     }
 
-    const producer = await transport.produce({
-      kind,
-      rtpParameters,
-      appData
-    });
-
+    const producer = await transport.produce({ kind, rtpParameters, appData });
     peer.producers.push(producer);
-    room.producers.push({
-      id: producer.id,
-      socketId: socket.id,
-      kind,
-      appData
-    });
+    room.producers.push({ id: producer.id, socketId: socket.id, kind, appData });
 
-    // Notify other peers
     socket.to(roomId).emit('new-producer', {
       producerId: producer.id,
       producerSocketId: socket.id,
@@ -172,86 +179,86 @@ function handleSocket(socket, io) {
       removeProducer(producer.id, room);
     });
 
-    callback({ id: producer.id });
+    if (typeof callback === 'function') {
+      callback({ id: producer.id });
+    }
   });
 
   socket.on('consume', async ({ transportId, producerId, rtpCapabilities }, callback) => {
     try {
-      // Check if the consumer can consume the producer
       if (!router.canConsume({ producerId, rtpCapabilities })) {
-        callback({ params: { error: 'Cannot consume' } });
+        if (typeof callback === 'function') callback({ params: { error: 'Cannot consume' } });
         return;
       }
 
-      // Find the transport
       const transport = peer.transports.find(t => t.id === transportId);
       if (!transport) {
-        callback({ params: { error: 'Transport not found' } });
+        if (typeof callback === 'function') callback({ params: { error: 'Transport not found' } });
         return;
       }
-
-      // Create consumer
+      const producerInfo = room.producers.find(p => p.producerId === producerId);
       const consumer = await transport.consume({
         producerId,
         rtpCapabilities,
         paused: true
       });
+      if (producerInfo && producerInfo.appData && producerInfo.appData.mediaType === 'screen') 
+        {
+  try {
+    await consumer.requestKeyFrame();
+    console.log('Requested keyframe for screen share consumer');
+  } catch (e) {
+    console.warn('Failed to request keyframe:', e);
+    }
+        }
 
       peer.consumers.push(consumer);
-
-      // Find producer info
-      const producerInfo = room.producers.find(p => p.id === producerId);
       
-      consumer.on('transportclose', () => {
-        console.log('Consumer transport closed');
-      });
+
+      consumer.on('transportclose', () => console.log('Consumer transport closed'));
 
       consumer.on('producerclose', () => {
         console.log('Producer of this consumer closed');
         socket.emit('producer-closed', { remoteProducerId: producerId });
-        
-        // Remove consumer
         peer.consumers = peer.consumers.filter(c => c.id !== consumer.id);
       });
 
-      callback({
-        params: {
-          id: consumer.id,
-          producerId,
-          kind: consumer.kind,
-          rtpParameters: consumer.rtpParameters,
-          producerSocketId: producerInfo ? producerInfo.socketId : null,
-          appData: producerInfo ? producerInfo.appData : null
-        }
-      });
+      if (typeof callback === 'function') {
+        callback({
+          params: {
+            id: consumer.id,
+            producerId,
+            kind: consumer.kind,
+            rtpParameters: consumer.rtpParameters,
+            producerSocketId: producerInfo ? producerInfo.socketId : null,
+            appData: producerInfo ? producerInfo.appData : null
+          }
+        });
+      }
     } catch (error) {
       console.error('Error creating consumer:', error);
-      callback({ params: { error: error.message } });
+      if (typeof callback === 'function') {
+        callback({ params: { error: error.message } });
+      }
     }
   });
 
   socket.on('consumer-resume', async ({ consumerId }) => {
     const consumer = peer.consumers.find(c => c.id === consumerId);
-    if (consumer) {
-      await consumer.resume();
-    }
+    if (consumer) await consumer.resume();
   });
 
   socket.on('closeProducer', ({ producerId }) => {
     const producer = peer.producers.find(p => p.id === producerId);
     if (producer) {
       producer.close();
-      // Remove from peer's producers
       peer.producers = peer.producers.filter(p => p.id !== producerId);
-      // Remove from room's producers
       removeProducer(producerId, room);
-      // Notify other peers
       socket.to(roomId).emit('producer-closed', { remoteProducerId: producerId });
     }
   });
 
   socket.on('screenShare', ({ sharing, producerId }) => {
-    // Notify other peers about screen sharing status
     socket.to(roomId).emit('screenShareStatus', {
       peerId: socket.id,
       sharing,
@@ -259,36 +266,55 @@ function handleSocket(socket, io) {
     });
   });
 
+  // Chat message handlers
+  socket.on('chat-message', ({ message, sender }) => {
+    console.log(`[CHAT] ${sender}: ${message}`);
+    socket.to(roomId).emit('chat-message', {
+      sender: sender || 'Ẩn danh',
+      message,
+      timestamp: new Date().toISOString()
+    });
+  });
+
+  socket.on('message', ({ text, sender }) => {
+    console.log(`[CHAT] ${sender}: ${text}`);
+    socket.to(roomId).emit('message', {
+      sender: sender || 'Ẩn danh',
+      message: text,
+      timestamp: new Date().toISOString()
+    });
+  });
+
   socket.on('disconnect', () => {
     console.log(`Socket disconnected: ${socket.id}`);
-    
-    // Close all transports
-    for (const transport of peer.transports) {
-      transport.close();
-    }
-    
-    // Remove peer from room
+
+    for (const transport of peer.transports) transport.close();
+
     if (room) {
       room.peers.delete(socket.id);
-      
-      // Remove all producers associated with this peer
+
       const producersToRemove = room.producers.filter(p => p.socketId === socket.id);
       for (const producer of producersToRemove) {
         socket.to(roomId).emit('producer-closed', { remoteProducerId: producer.id });
       }
-      
+
       room.producers = room.producers.filter(p => p.socketId !== socket.id);
-      
-      // If room is empty, remove it
-      if (room.peers.size === 0) {
-        rooms.delete(roomId);
-      }
+
+      if (room.peers.size === 0) rooms.delete(roomId);
+      else io.to(roomId).emit('updateParticipants', getParticipants(room));
     }
   });
 }
 
 function removeProducer(producerId, room) {
   room.producers = room.producers.filter(p => p.id !== producerId);
+}
+
+function getParticipants(room) {
+  return [...room.peers.values()].map(p => ({
+    id: p.id,
+    name: p.name || 'Ẩn danh'
+  }));
 }
 
 module.exports = {
