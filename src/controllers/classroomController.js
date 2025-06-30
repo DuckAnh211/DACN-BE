@@ -1,5 +1,6 @@
 const { createClassroomService, getClassroomsService, deleteClassroomService, getClassroomStudentsService, updateClassroomService } = require('../services/classroomService');
-
+const User = require('../models/user');
+const Classroom = require('../models/classroom');
 const createClassroom = async (req, res) => {
     try {
         const { className, subject, teacherName, classCode } = req.body;
@@ -125,8 +126,82 @@ const updateClassroom = async (req, res) => {
     }
 };
 
+const leaveClassroom = async (req, res) => {
+  try {
+    const { classCode, studentEmail } = req.body;
+
+    if (!classCode || !studentEmail) {
+      return res.status(400).json({
+        success: false,
+        message: 'Vui lòng cung cấp mã lớp và email sinh viên'
+      });
+    }
+
+    // Tìm lớp học
+    const classroom = await Classroom.findOne({ classCode });
+    if (!classroom) {
+      return res.status(404).json({
+        success: false,
+        message: 'Không tìm thấy lớp học'
+      });
+    }
+
+    // Tìm sinh viên
+    const student = await User.findOne({ email: studentEmail });
+    if (!student) {
+      return res.status(404).json({
+        success: false,
+        message: 'Không tìm thấy sinh viên'
+      });
+    }
+
+    // Kiểm tra và khởi tạo mảng nếu cần
+    if (!student.enrolledClasses) {
+      student.enrolledClasses = [];
+    }
+    if (!classroom.students) {
+      classroom.students = [];
+    }
+
+    // Kiểm tra sinh viên có trong lớp không
+    const isEnrolled = student.enrolledClasses.some(classId => classId.toString() === classroom._id.toString());
+    if (!isEnrolled) {
+      return res.status(400).json({
+        success: false,
+        message: 'Sinh viên chưa tham gia lớp học này'
+      });
+    }
+
+    // Xóa lớp học khỏi danh sách của sinh viên
+    student.enrolledClasses = student.enrolledClasses.filter(classId => classId.toString() !== classroom._id.toString());
+    await student.save();
+
+    // Xóa sinh viên khỏi danh sách của lớp học
+    classroom.students = classroom.students.filter(studentId => studentId.toString() !== student._id.toString());
+    await classroom.save();
+
+    return res.status(200).json({
+      success: true,
+      message: 'Rời khỏi lớp học thành công',
+      data: {
+        className: classroom.className,
+        classCode: classroom.classCode,
+        studentName: student.name
+      }
+    });
+
+  } catch (error) {
+    console.error('Lỗi khi rời khỏi lớp học:', error);
+    return res.status(500).json({
+      success: false,
+      message: error.message || 'Đã xảy ra lỗi khi rời khỏi lớp học'
+    });
+  }
+};
+
 module.exports = {
   createClassroom,
+  leaveClassroom,
   getClassrooms,
   deleteClassroom,
   getClassroomStudents,
