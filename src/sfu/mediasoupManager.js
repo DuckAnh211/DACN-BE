@@ -167,6 +167,11 @@ function handleSocket(socket, io) {
     peer.producers.push(producer);
     room.producers.push({ id: producer.id, socketId: socket.id, kind, appData });
 
+    // Log screen share
+    if (appData && appData.mediaType === 'screen') {
+      console.log(`📺 Screen share started by ${peer.name} (${socket.id})`);
+    }
+
     socket.to(roomId).emit('new-producer', {
       producerId: producer.id,
       producerSocketId: socket.id,
@@ -196,24 +201,24 @@ function handleSocket(socket, io) {
         if (typeof callback === 'function') callback({ params: { error: 'Transport not found' } });
         return;
       }
-      const producerInfo = room.producers.find(p => p.producerId === producerId);
+      const producerInfo = room.producers.find(p => p.id === producerId);
       const consumer = await transport.consume({
         producerId,
         rtpCapabilities,
         paused: true
       });
-      if (producerInfo && producerInfo.appData && producerInfo.appData.mediaType === 'screen') 
-        {
-  try {
-    await consumer.requestKeyFrame();
-    console.log('Requested keyframe for screen share consumer');
-  } catch (e) {
-    console.warn('Failed to request keyframe:', e);
-    }
+      
+      // Xử lý đặc biệt cho screen share
+      if (producerInfo && producerInfo.appData && producerInfo.appData.mediaType === 'screen') {
+        try {
+          await consumer.requestKeyFrame();
+          console.log('📺 Requested keyframe for screen share consumer');
+        } catch (e) {
+          console.warn('Failed to request keyframe:', e);
         }
+      }
 
       peer.consumers.push(consumer);
-      
 
       consumer.on('transportclose', () => console.log('Consumer transport closed'));
 
@@ -259,8 +264,10 @@ function handleSocket(socket, io) {
   });
 
   socket.on('screenShare', ({ sharing, producerId }) => {
+    console.log(`📺 Screen share ${sharing ? 'started' : 'stopped'} by ${peer.name} (${socket.id})`);
     socket.to(roomId).emit('screenShareStatus', {
       peerId: socket.id,
+      peerName: peer.name,
       sharing,
       producerId
     });
@@ -307,17 +314,27 @@ function handleSocket(socket, io) {
 }
 
 function removeProducer(producerId, room) {
-  room.producers = room.producers.filter(p => p.id !== producerId);
+  const index = room.producers.findIndex(p => p.id === producerId);
+  if (index !== -1) {
+    const producer = room.producers[index];
+    room.producers.splice(index, 1);
+    
+    // Nếu là screen share, thông báo dừng chia sẻ màn hình
+    if (producer.appData && producer.appData.mediaType === 'screen') {
+      console.log('Screen share producer removed');
+    }
+  }
 }
 
 function getParticipants(room) {
-  return [...room.peers.values()].map(p => ({
-    id: p.id,
-    name: p.name || 'Ẩn danh'
+  return Array.from(room.peers.values()).map(peer => ({
+    id: peer.id,
+    name: peer.name
   }));
 }
 
 module.exports = {
   createMediasoupWorker,
-  handleSocket
+  handleSocket,
+  getOrCreateRoom
 };
