@@ -51,13 +51,7 @@ const loginTeacherService = async (email, password) => {
     );
 
     return {
-        message: "Đăng nhập thành công",
-        token,
-        teacher: {
-            name: teacher.name,
-            email: teacher.email,
-            subject: teacher.subject
-        }
+        "EM": "Login successful"
     };
 };
 

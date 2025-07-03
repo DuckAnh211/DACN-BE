@@ -117,7 +117,7 @@ routerAPI.get('/teacher/reset-password', (req, res) => {
 });
 
 // Đổi mật khẩu giáo viên
-routerAPI.post('/teacher/change-password', async (req, res) => {d
+routerAPI.post('/teacher/change-password', async (req, res) => {
     const { email, oldPassword, newPassword } = req.body;
     if (!email || !oldPassword || !newPassword) {
         return res.status(400).json({ message: 'Vui lòng cung cấp email, mật khẩu cũ và mật khẩu mới.' });
