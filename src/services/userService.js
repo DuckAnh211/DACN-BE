@@ -1,11 +1,9 @@
 require("dotenv").config();
 const User = require("../models/user");
 const jwt = require("jsonwebtoken");
-const bcrypt = require('bcrypt'); // Add this import for bcrypt
-const mailjet = require('node-mailjet').apiConnect(
-    process.env.MJ_API_KEY,
-    process.env.MJ_API_SECRET
-);
+const bcrypt = require('bcrypt'); 
+const nodemailer = require('nodemailer');
+
 
 // Hàm tạo token đặt lại mật khẩu
 function createResetToken(userId) {
@@ -16,19 +14,31 @@ function createResetToken(userId) {
     );
 }
 
-// Hàm gửi email đặt lại mật khẩu
-function sendResetEmail(userEmail, token) {
-    const resetLink = `https://api-pothoiz.onrender.com/v1/api/reset-password?token=${token}`;
-    return mailjet.post('send', { version: 'v3.1' }).request({
-        Messages: [
-            {
-                From: { Email: "futureclass03@gmail.com", Name: "FutureClass" },
-                To: [{ Email: userEmail }],
-                Subject: "Yêu cầu đặt lại mật khẩu",
-                HTMLPart: `<h3>Đặt lại mật khẩu của bạn</h3><p>Nhấn vào <a href="${resetLink}">đây</a> để đặt lại mật khẩu</p>`
+// Hàm gửi email đặt lại mật khẩu bằng nodemailer
+async function sendResetEmail(userEmail, token) {
+    try {
+        const transporter = nodemailer.createTransport({
+            service: 'gmail',
+            auth: {
+                user: process.env.GMAIL_USER,
+                pass: process.env.GMAIL_PASS
             }
-        ]
-    });
+        });
+
+        const resetLink = `${process.env.CLIENT_URL}/v1/api/reset-password?token=${token}`;
+        const mailOptions = {
+            from: `"FutureClass" <${process.env.GMAIL_USER}>`,
+            to: userEmail,
+            subject: "Yêu cầu đặt lại mật khẩu",
+            html: `<h3>Đặt lại mật khẩu của bạn</h3><p>Nhấn vào <a href="${resetLink}">đây</a> để đặt lại mật khẩu</p>`
+        };
+
+        await transporter.sendMail(mailOptions);
+        return true;
+    } catch (error) {
+        console.error("Error sending email:", error);
+        return false;
+    }
 }
 
 // Hàm tạo người dùng mới
@@ -96,8 +106,9 @@ const loginService = async (email1, password) => {
         // fetch user by email
         const user = await User.findOne({ email: email1 });
         if (user) {
-            // So sánh mật khẩu trực tiếp
-            if (password === user.password) {
+            // So sánh mật khẩu bằng bcrypt
+            const isMatch = await bcrypt.compare(password, user.password);
+            if (isMatch) {
                 const payload = {
                     email: user.email,
                     name: user.name
@@ -112,7 +123,7 @@ const loginService = async (email1, password) => {
                 );
 
                 return {
-                    EM: "Login successful"
+                    EM: "Login successful",
                 };
             } else {
                 return {

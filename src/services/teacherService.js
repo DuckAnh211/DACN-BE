@@ -87,6 +87,61 @@ const getTeacherService = async () => {
     }
 };
 
+// Tìm giáo viên theo email
+const findTeacherByEmail = async (email) => {
+    try {
+        return await Teacher.findOne({ email });
+    } catch (error) {
+        console.error("Lỗi khi tìm giáo viên theo email:", error);
+        throw error;
+    }
+};
+
+// Cập nhật mật khẩu giáo viên (đã mã hóa)
+const updateTeacherPassword = async (teacherId, newPassword) => {
+    try {
+        // Mã hóa mật khẩu mới
+        const hashedPassword = await bcrypt.hash(newPassword, 10);
+        const updated = await Teacher.findByIdAndUpdate(
+            teacherId,
+            { password: hashedPassword },
+            { new: true }
+        );
+        return !!updated;
+    } catch (error) {
+        console.error("Lỗi khi cập nhật mật khẩu giáo viên:", error);
+        throw error;
+    }
+};
+
+// Gửi email đặt lại mật khẩu cho giáo viên
+const nodemailer = require('nodemailer');
+const sendResetEmail = async (email, token) => {
+    try {
+        const transporter = nodemailer.createTransport({
+            service: 'gmail',
+            auth: {
+                user: process.env.GMAIL_USER,
+                pass: process.env.GMAIL_PASS
+            }
+        });
+
+        const resetLink = `${process.env.CLIENT_URL}/v1/api/teacher/reset-password?token=${token}`;
+        const mailOptions = {
+            from: process.env.GMAIL_USER,
+            to: email,
+            subject: 'Đặt lại mật khẩu giáo viên',
+            html: `<p>Bạn đã yêu cầu đặt lại mật khẩu. Nhấn vào <a href="${resetLink}">đây</a> để đặt lại mật khẩu.</p>`
+        };
+
+        await transporter.sendMail(mailOptions);
+        return true;
+    } catch (error) {
+        console.error("Lỗi khi gửi email đặt lại mật khẩu giáo viên:", error);
+        return false;
+    }
+};
+
 const deleteTeacherService = async (email) => {
     try {
         const teacher = await Teacher.findOneAndDelete({ email });
@@ -152,11 +207,23 @@ const getTeacherByEmailService = async (email) => {
     }
 };
 
+const createResetToken = (teacherId) => {
+    return jwt.sign(
+        { userId: teacherId },
+        process.env.JWT_SECRET,
+        { expiresIn: '1h' }
+    );
+};
+
 module.exports = {
     createTeacherService,
     loginTeacherService,
     getTeacherService,
     deleteTeacherService,
     updateTeacherService,
-    getTeacherByEmailService
+    getTeacherByEmailService,
+    findTeacherByEmail,
+    updateTeacherPassword,
+    createResetToken,
+    sendResetEmail
 };

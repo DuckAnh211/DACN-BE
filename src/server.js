@@ -39,6 +39,10 @@ app.use(cors({
   credentials: true
 }));
 
+// Serve static files for style and images
+app.use('/style', express.static(path.join(__dirname, 'style')));
+app.use('/images', express.static(path.join(__dirname, 'images')));
+
 // Configure body parsers
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));

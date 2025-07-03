@@ -2,7 +2,7 @@ const express = require('express');
 const bodyParser = require('body-parser');
 const { createUser, handleLogin, getUser, forgotPassword, resetPassword, deleteUser } = require('../controllers/userController');
 const { findUserByEmail, updateUser } = require('../services/userService');
-const { createTeacher, handleTeacherLogin, getTeacher, deleteTeacher } = require('../controllers/teacherController');
+const { createTeacher, handleTeacherLogin, getTeacher, deleteTeacher, forgotTeacherPassword, resetTeacherPassword } = require('../controllers/teacherController');
 const Teacher = require('../models/teacher');
 const { updateTeacherService, getTeacherByEmailService } = require('../services/teacherService');
 const { createClassroom, getClassrooms, deleteClassroom, getClassroomStudents, updateClassroom, leaveClassroom } = require('../controllers/classroomController');
@@ -29,25 +29,117 @@ routerAPI.get("/", (req, res) => {
   return res.status(200).json("Hello world api");
 });
 
-// Auth - User
+// Auth - Học sinh
 routerAPI.post("/register", createUser);
 routerAPI.post("/login", handleLogin);
 routerAPI.get("/user", getUser);
 
-// Auth - Teacher
+// Auth - Giáo viên
 routerAPI.get("/teacher", getTeacher);
 routerAPI.post("/teacher/register", createTeacher);
 routerAPI.post("/teacher/login", handleTeacherLogin);
 
-// Quên / đặt lại mật khẩu
+// Quên / đặt lại mật khẩu (học sinh)
 routerAPI.post('/forgot-password', forgotPassword);
 routerAPI.post('/reset-password', resetPassword);
 routerAPI.get('/reset-password', (req, res) => {
     const { token } = req.query;
     if (!token) {
-        return res.status(400).json({ message: "Token is missing" });
+        return res.status(400).send("Token is missing");
     }
-    res.status(200).send(``);
+    // Trả về form HTML cho người dùng nhập mật khẩu mới
+      res.send(`
+        <!DOCTYPE html>
+        <html lang="vi">
+        <head>
+            <meta charset="UTF-8">
+            <title>Đặt lại mật khẩu</title>
+            <link rel="stylesheet" href="/style/style.css">
+        </head>
+        <body>
+            <div class="login-container">
+                <img class="logo" src="/images/logo.jpg" alt="Logo">
+                <h2>Đặt lại mật khẩu</h2>
+                <form method="POST" action="/v1/api/reset-password">
+                    <input type="hidden" name="token" value="${token}" />
+                    <div class="form-group">
+                        <label for="newPassword">Mật khẩu mới</label>
+                        <input type="password" id="newPassword" name="newPassword" placeholder="Nhập mật khẩu mới" required />
+                    </div>
+                    <div class="form-group">
+                        <label for="confirmPassword">Nhập lại mật khẩu mới</label>
+                        <input type="password" id="confirmPassword" name="confirmPassword" placeholder="Nhập lại mật khẩu mới" required />
+                    </div>
+                    <button type="submit" class="btn btn-primary">Đặt lại mật khẩu</button>
+                </form>
+            </div>
+        </body>
+        </html>
+    `);
+});
+
+// Quên / đặt lại mật khẩu (giáo viên)
+routerAPI.post('/teacher/forgot-password', forgotTeacherPassword);
+routerAPI.post('/teacher/reset-password', resetTeacherPassword);
+routerAPI.get('/teacher/reset-password', (req, res) => {
+    const { token } = req.query;
+    if (!token) {
+        return res.status(400).send("Token is missing");
+    }
+    res.send(`
+        <!DOCTYPE html>
+        <html lang="vi">
+        <head>
+            <meta charset="UTF-8">
+            <title>Đặt lại mật khẩu giáo viên</title>
+            <link rel="stylesheet" href="/style/style.css">
+        </head>
+        <body>
+            <div class="login-container">
+                <img class="logo" src="/images/logo.jpg" alt="Logo">
+                <h2>Đặt lại mật khẩu giáo viên</h2>
+                <form method="POST" action="/v1/api/teacher/reset-password">
+                    <input type="hidden" name="token" value="${token}" />
+                    <div class="form-group">
+                        <label for="newPassword">Mật khẩu mới</label>
+                        <input type="password" id="newPassword" name="newPassword" placeholder="Nhập mật khẩu mới" required />
+                    </div>
+                    <div class="form-group">
+                        <label for="confirmPassword">Nhập lại mật khẩu mới</label>
+                        <input type="password" id="confirmPassword" name="confirmPassword" placeholder="Nhập lại mật khẩu mới" required />
+                    </div>
+                    <button type="submit" class="btn btn-primary">Đặt lại mật khẩu</button>
+                </form>
+            </div>
+        </body>
+        </html>
+    `);
+});
+
+// Đổi mật khẩu giáo viên
+routerAPI.post('/teacher/change-password', async (req, res) => {d
+    const { email, oldPassword, newPassword } = req.body;
+    if (!email || !oldPassword || !newPassword) {
+        return res.status(400).json({ message: 'Vui lòng cung cấp email, mật khẩu cũ và mật khẩu mới.' });
+    }
+    try {
+        const teacher = await Teacher.findOne({ email });
+        if (!teacher) {
+            return res.status(404).json({ message: 'Không tìm thấy giáo viên.' });
+        }
+        const bcrypt = require('bcrypt');
+        const isMatch = await bcrypt.compare(oldPassword, teacher.password);
+        if (!isMatch) {
+            return res.status(401).json({ message: 'Mật khẩu cũ không đúng.' });
+        }
+        const hashedPassword = await bcrypt.hash(newPassword, 10);
+        teacher.password = hashedPassword;
+        await teacher.save();
+        return res.status(200).json({ message: 'Đổi mật khẩu thành công.' });
+    } catch (error) {
+        console.error('Lỗi đổi mật khẩu giáo viên:', error);
+        return res.status(500).json({ message: 'Đã xảy ra lỗi khi đổi mật khẩu.' });
+    }
 });
 
 // API lấy thông tin user theo email
