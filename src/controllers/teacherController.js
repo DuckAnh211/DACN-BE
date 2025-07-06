@@ -110,7 +110,50 @@ const resetTeacherPassword = async (req, res) => {
 
         const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\W).{6,}$/;
         if (!passwordRegex.test(newPassword)) {
-            return res.status(400).send("Mật khẩu phải có ít nhất 6 ký tự, bao gồm chữ cái in hoa, chữ cái thường, và ký tự đặc biệt.");
+            return res.status(400).send(`
+                <!DOCTYPE html>
+                <html lang="en">
+                <head>
+                    <meta charset="UTF-8">
+                    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+                    <title>Thông báo</title>
+                    <style>
+                        body {
+                            display: flex;
+                            align-items: center;
+                            justify-content: center;
+                            height: 100vh;
+                            font-family: Arial, sans-serif;
+                            background-color: #f2f2f2;
+                            margin: 0;
+                        }
+                        .table {
+                            border: 1px solid #ddd;
+                            padding: 20px;
+                            background-color: #fff;
+                            border-radius: 5px;
+                            width: 300px;
+                            text-align: center;
+                        }
+                        .table h2 {
+                            color: #FF0000;
+                            margin: 0 0 10px;
+                        }
+                        .table p {
+                            color: #333;
+                            font-size: 14px;
+                            line-height: 1.5;
+                        }
+                    </style>
+                </head>
+                <body>
+                    <div class="table">
+                        <h2>Thông báo</h2>
+                        <p>Mật khẩu phải có ít nhất 6 ký tự, bao gồm chữ cái in hoa, chữ cái thường, và ký tự đặc biệt.</p>
+                    </div>
+                </body>
+                </html>
+            `);
         }
 
         const decoded = jwt.verify(token, process.env.JWT_SECRET);
@@ -118,13 +161,139 @@ const resetTeacherPassword = async (req, res) => {
         const updated = await updateTeacherPassword(decoded.userId, hashedPassword);
 
         if (updated) {
-            return res.status(200).send("Mật khẩu đã được cập nhật thành công.");
+            return res.status(200).send(`
+            <!DOCTYPE html>
+            <html lang="en">
+            <head>
+                <meta charset="UTF-8">
+                <meta name="viewport" content="width=device-width, initial-scale=1.0">
+                <title>Thông báo</title>
+                <style>
+                    body {
+                        display: flex;
+                        align-items: center;
+                        justify-content: center;
+                        height: 100vh;
+                        font-family: Arial, sans-serif;
+                        background-color: #f2f2f2;
+                        margin: 0;
+                    }
+                    .table {
+                        border: 1px solid #ddd;
+                        padding: 10px;
+                        background-color: #fff;
+                        border-radius: 5px;
+                        width: 300px;
+                        text-align: center;
+                    }
+                    .table h2 {
+                        color: #4CAF50;
+                    }
+                    .table p {
+                        color: #333;
+                    }
+                </style>
+            </head>
+            <body>
+                <div class="table">
+                    <h2>Thông báo</h2>
+                    <p>Mật khẩu đã được cập nhật thành công.</p>
+                </div>
+            </body>
+            </html>
+        `);
         } else {
-            return res.status(500).send("Đã có lỗi, cập nhật mật khẩu thất bại!");
+            return res.status(500).send(`
+        <!DOCTYPE html>
+        <html lang="en">
+        <head>
+            <meta charset="UTF-8">
+            <meta name="viewport" content="width=device-width, initial-scale=1.0">
+            <title>Thông báo</title>
+            <style>
+                body {
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    height: 100vh;
+                    font-family: Arial, sans-serif;
+                    background-color: #f2f2f2;
+                    margin: 0;
+                }
+                .table {
+                    border: 1px solid #ddd;
+                    padding: 20px;
+                    background-color: #fff;
+                    border-radius: 5px;
+                    width: 300px;
+                    text-align: center;
+                }
+                .table h2 {
+                    color: #FF0000;
+                    margin: 0 0 10px;
+                }
+                .table p {
+                    color: #333;
+                    font-size: 14px;
+                    line-height: 1.5;
+                }
+            </style>
+        </head>
+        <body>
+            <div class="table">
+                <h2>Thông báo</h2>
+                <p>Đã có lỗi, cập nhật mật khẩu thất bại!</p>
+            </div>
+        </body>
+        </html>
+    `);
         }
     } catch (error) {
         console.error("Reset teacher password error:", error);
-        return res.status(400).send("Đã có lỗi, cập nhật mật khẩu thất bại!");
+        return res.status(400).send(`
+        <!DOCTYPE html>
+        <html lang="en">
+        <head>
+            <meta charset="UTF-8">
+            <meta name="viewport" content="width=device-width, initial-scale=1.0">
+            <title>Thông báo</title>
+            <style>
+                body {
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    height: 100vh;
+                    font-family: Arial, sans-serif;
+                    background-color: #f2f2f2;
+                    margin: 0;
+                }
+                .table {
+                    border: 1px solid #ddd;
+                    padding: 20px;
+                    background-color: #fff;
+                    border-radius: 5px;
+                    width: 300px;
+                    text-align: center;
+                }
+                .table h2 {
+                    color: #FF0000;
+                    margin: 0 0 10px;
+                }
+                .table p {
+                    color: #333;
+                    font-size: 14px;
+                    line-height: 1.5;
+                }
+            </style>
+        </head>
+        <body>
+            <div class="table">
+                <h2>Thông báo</h2>
+                <p>Đã có lỗi, cập nhật mật khẩu thất bại!</p>
+            </div>
+        </body>
+        </html>
+    `);
     }
 };
 
