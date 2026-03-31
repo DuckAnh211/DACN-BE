@@ -1,0 +1,14 @@
+﻿const express = require('express');
+const cors = require('cors');
+const morgan = require('morgan');
+require('dotenv').config();
+
+const app = express();
+app.use(cors());
+app.use(express.json());
+app.use(morgan('dev'));
+app.use('/api', require('./routes'));
+app.get('/health', (_, res) => res.json({ service: 'classroom-service', ok: true }));
+
+const PORT = process.env.PORT || 4003;
+app.listen(PORT, () => console.log('classroom-service listening on ' + PORT));
