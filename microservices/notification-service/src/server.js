@@ -10,5 +10,5 @@ app.use(morgan('dev'));
 app.use('/api', require('./routes'));
 app.get('/health', (_, res) => res.json({ service: 'notification-service', ok: true }));
 
-const PORT = process.env.PORT || 4009;
+const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => console.log('notification-service listening on ' + PORT));

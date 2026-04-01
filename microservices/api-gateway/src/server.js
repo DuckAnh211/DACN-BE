@@ -7,15 +7,15 @@ app.use(cors());
 app.use(morgan('dev'));
 
 const routes = [
-  { p:'/auth', t:'http://auth-service:4001' },
-  { p:'/users', t:'http://user-service:4002' },
-  { p:'/classrooms', t:'http://classroom-service:4003' },
-  { p:'/lessons', t:'http://lesson-service:4004' },
-  { p:'/assignments', t:'http://assignment-service:4005' },
-  { p:'/exams', t:'http://exam-service:4006' },
-  { p:'/submissions', t:'http://submission-service:4007' },
-  { p:'/meetings', t:'http://meeting-service:4008' },
-  { p:'/notifications', t:'http://notification-service:4009' }
+  { p:'/auth', t:'http://auth-service:3000' },
+  { p:'/users', t:'http://user-service:3000' },
+  { p:'/classrooms', t:'http://classroom-service:3000' },
+  { p:'/lessons', t:'http://lesson-service:3000' },
+  { p:'/assignments', t:'http://assignment-service:3000' },
+  { p:'/exams', t:'http://exam-service:3000' },
+  { p:'/submissions', t:'http://submission-service:3000' },
+  { p:'/meetings', t:'http://meeting-service:3000' },
+  { p:'/notifications', t:'http://notification-service:3000' }
 ];
 
 routes.forEach(r => app.use('/api' + r.p, createProxyMiddleware({
