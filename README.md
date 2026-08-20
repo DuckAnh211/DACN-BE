@@ -8,6 +8,8 @@ DACN-BE là phần backend của nền tảng học trực tuyến, kết nối 
 
 API Gateway đóng vai trò điểm vào chung cho client, sau đó proxy request đến các service tương ứng. Các service dùng Express để xây dựng API, MongoDB/Mongoose để lưu dữ liệu, JWT cho xác thực và MediaSoup cho chức năng họp trực tuyến.
 
+Tài liệu đồ án mô tả hệ thống theo mô hình client-server, RESTful API, NoSQL Database và realtime communication. Backend trong repo này là phần xử lý nghiệp vụ, dữ liệu và realtime cho website lớp học online.
+
 ## Tính năng chính
 
 - Xác thực người dùng, đăng nhập, đăng ký và xử lý token.
@@ -17,9 +19,42 @@ API Gateway đóng vai trò điểm vào chung cho client, sau đó proxy reques
 - Quản lý bài tập, file bài tập và bài nộp của học sinh.
 - Quản lý bài kiểm tra, câu hỏi, quiz và kết quả làm bài.
 - Gửi và đọc thông báo theo lớp học.
+- Gửi email khôi phục mật khẩu.
+- Upload file bài học, bài tập và bài nộp.
 - Quản lý phòng học trực tuyến.
 - Hỗ trợ video meeting realtime thông qua MediaSoup.
 - API Gateway gom các endpoint backend dưới cùng một cổng truy cập.
+
+## Nghiệp vụ theo vai trò
+
+### Học sinh
+
+- Đăng ký, đăng nhập và quên mật khẩu.
+- Cập nhật thông tin cá nhân.
+- Tham gia hoặc rời lớp học bằng mã lớp.
+- Xem lớp học đã tham gia, bài học, tài liệu và thông báo.
+- Làm bài tập, nộp bài, xem điểm và nhận xét.
+- Làm quiz/bài kiểm tra trực tuyến và nhận kết quả.
+- Tham gia buổi học trực tuyến.
+
+### Giáo viên
+
+- Đăng nhập, quên mật khẩu và cập nhật hồ sơ cá nhân.
+- Quản lý danh sách học sinh trong lớp.
+- Đăng tải bài học và tài liệu.
+- Giao bài tập, chấm điểm và nhận xét bài nộp.
+- Tạo, thêm câu hỏi và quản lý bài kiểm tra.
+- Xem kết quả làm bài của học sinh.
+- Gửi thông báo cho học sinh trong lớp.
+- Tổ chức phòng học/họp trực tuyến.
+
+### Quản trị viên
+
+- Quản lý và xóa tài khoản học sinh.
+- Tạo, chỉnh sửa và xóa tài khoản giáo viên.
+- Tạo, chỉnh sửa và xóa lớp học.
+- Phân công hoặc thay đổi giáo viên giảng dạy cho từng lớp.
+- Xem thống kê tổng quan hệ thống.
 
 ## Công nghệ sử dụng
 
@@ -31,6 +66,10 @@ API Gateway đóng vai trò điểm vào chung cho client, sau đó proxy reques
 - bcrypt
 - Multer
 - MediaSoup
+- WebRTC
+- Socket.IO
+- Nodemailer
+- uuid
 - CORS
 - Morgan
 - dotenv
@@ -57,6 +96,20 @@ DACN-BE/
 └── README.md
 ```
 
+## Cấu trúc bên trong service
+
+Các service chính thường được tổ chức theo các thư mục:
+
+- `src/config`: cấu hình database, upload file hoặc cấu hình hệ thống.
+- `src/controllers`: nhận request, kiểm tra input và trả response.
+- `src/services`: xử lý nghiệp vụ, tách khỏi controller để dễ bảo trì.
+- `src/models`: định nghĩa schema/model MongoDB bằng Mongoose.
+- `src/routes`: khai báo endpoint API.
+- `src/middleware`: middleware xác thực, phân quyền hoặc xử lý request.
+- `src/sfu`: thành phần WebRTC/MediaSoup cho video conference.
+- `src/server.js`: khởi tạo Express server, middleware, route và kết nối database.
+- `uploads`: thư mục lưu file bài học, bài tập hoặc bài nộp nếu service có upload.
+
 ## Danh sách service
 
 | Service | Port mặc định | Vai trò |
@@ -71,6 +124,31 @@ DACN-BE/
 | submission-service | 4007 | Quản lý bài nộp của học sinh |
 | meeting-service | 4008 | Quản lý phòng học trực tuyến và MediaSoup |
 | notification-service | 4009 | Quản lý thông báo lớp học |
+
+## Thiết kế dữ liệu
+
+Hệ thống sử dụng MongoDB, mỗi thực thể chính được lưu trong một collection riêng. Các collection liên kết với nhau bằng `ObjectId` hoặc mã lớp/mã bài tùy nghiệp vụ.
+
+| Collection | Vai trò chính |
+| --- | --- |
+| `users` | Lưu tài khoản học sinh/người dùng, thông tin cá nhân và danh sách lớp đã tham gia |
+| `teachers` | Lưu tài khoản giáo viên, thông tin chuyên môn và hồ sơ cá nhân |
+| `classrooms` | Lưu lớp học, mã lớp, môn học, giáo viên phụ trách và thành viên |
+| `lessons` | Lưu bài học, mô tả, tài liệu đính kèm và lớp liên quan |
+| `assignments` | Lưu bài tập, hạn nộp, điểm tối đa, file đính kèm và thống kê bài nộp |
+| `submissions` | Lưu bài nộp của học sinh, file nộp, điểm, nhận xét và trạng thái chấm |
+| `quizzes` | Lưu bài quiz, câu hỏi, đáp án, thời gian làm bài và lớp liên quan |
+| `quizresults` | Lưu kết quả làm quiz, câu trả lời, điểm và thời gian nộp |
+| `meetings` | Lưu buổi học trực tuyến, host, thời gian, link họp và người tham gia |
+| `notifications` | Lưu thông báo lớp học, người gửi, nội dung và danh sách đã đọc |
+
+Quan hệ chính:
+
+- `classrooms` liên kết với `teachers` và danh sách `users`.
+- `assignments`, `lessons`, `quizzes`, `meetings` liên kết với lớp học qua `classroomId` hoặc `classCode`.
+- `submissions` liên kết với `assignments` và học sinh.
+- `quizresults` liên kết với `quizzes` và học sinh.
+- `notifications` liên kết với lớp học.
 
 ## API Gateway
 
@@ -93,6 +171,18 @@ Các route chính qua gateway:
 | `/api/submissions` | submission-service |
 | `/api/meetings` | meeting-service |
 | `/api/notifications` | notification-service |
+
+Một số nhóm route nghiệp vụ theo tài liệu thiết kế:
+
+| Đối tượng | Endpoint tiêu biểu | Chức năng |
+| --- | --- | --- |
+| User | `POST /register`, `POST /login`, `GET /user` | Đăng ký, đăng nhập, lấy thông tin người dùng |
+| Teacher | `GET /teacher`, `POST /teacher/register`, `POST /teacher/login` | Quản lý và xác thực giáo viên |
+| Classroom | `POST /create-classroom`, `GET /classrooms`, `DELETE /delete-classroom`, `POST /join-classroom` | CRUD lớp học, tham gia lớp |
+| Assignment | `POST /assignments`, `GET /assignments/class/:classCode`, `GET /assignments/:assignmentId` | Quản lý bài tập và file đính kèm |
+| Lesson | `POST /lessons`, `GET /lessons/classroom/:classCode` | Quản lý bài học và tài liệu |
+| Quiz | `POST /quizzes`, `GET /quizzes/class/:classCode`, `POST /quiz-results` | Quản lý quiz và kết quả |
+| Notification | `POST /notifications`, `GET /notifications/classroom/:classCode` | Gửi và xem thông báo |
 
 Kiểm tra gateway:
 
@@ -123,7 +213,12 @@ Mỗi service có file `.env` riêng trong thư mục service. Các biến thư�
 PORT=4001
 MONGO_DB_URL=mongodb://localhost:27017/dacn
 JWT_SECRET=your_jwt_secret
+JWT_EXPIRE=15m
 CLIENT_URL=http://localhost:5173
+GMAIL_USER=your_email@example.com
+GMAIL_PASS=your_app_password
+MEDIASOUP_LISTEN_IP=0.0.0.0
+MEDIASOUP_ANNOUNCED_IP=127.0.0.1
 ```
 
 Ghi chú:
@@ -132,6 +227,8 @@ Ghi chú:
 - `MONGO_DB_URL` cần được cấu hình cho các service dùng database.
 - `JWT_SECRET` cần có cho các service xử lý xác thực/token.
 - `CLIENT_URL` dùng cho các luồng liên quan đến frontend, ví dụ reset password.
+- `GMAIL_USER` và `GMAIL_PASS` dùng cho chức năng gửi email khôi phục mật khẩu bằng Nodemailer.
+- Các biến `MEDIASOUP_*` dùng cho meeting/video conference nếu service triển khai MediaSoup theo môi trường chạy.
 
 ## Cài đặt và chạy từng service
 
@@ -186,10 +283,14 @@ Làm tương tự với các service khác. Nếu muốn chạy toàn bộ hệ 
 
 - Tạo/lấy thông tin meeting.
 - Quản lý participant trong phòng.
+- Khởi tạo MediaSoup worker/router.
 - Tạo WebRTC transport.
 - Produce/consume audio, video và screen share.
+- Broadcast trạng thái chia sẻ màn hình.
 - Gửi chat realtime trong phòng.
 - Thông báo khi người dùng rời phòng hoặc dừng chia sẻ.
+
+Theo thiết kế, luồng realtime gồm client kết nối phòng bằng Socket.IO, server tạo WebRTC transport, người gửi media tạo producer, người nhận tạo consumer và server broadcast sự kiện producer/chat/screen share đến các thành viên trong phòng.
 
 Frontend tương ứng nằm ở repo:
 
@@ -203,7 +304,7 @@ https://github.com/DuckAnh211/DACN-FE
 - Nên đồng bộ `PORT`, `MONGO_DB_URL`, `JWT_SECRET` giữa các service khi chạy local.
 - API Gateway hiện được cấu hình thuận tiện cho môi trường Docker network; khi chạy thủ công từng service trên localhost cần điều chỉnh target proxy.
 - Một số service đang tách controller/service/model nhưng route public chủ yếu đi qua `index.js`, cần kiểm tra thêm khi mở rộng API.
-- Code hiện có sử dụng thêm các module như `mongoose`, `jsonwebtoken`, `bcrypt`, `multer` và `mediasoup`; nếu chạy gặp lỗi `MODULE_NOT_FOUND`, cần bổ sung các dependency còn thiếu vào `package.json` của service tương ứng.
+- Code hiện có sử dụng thêm các module như `mongoose`, `jsonwebtoken`, `bcrypt`, `multer`, `mediasoup`, `nodemailer`, `socket.io` và `uuid`; nếu chạy gặp lỗi `MODULE_NOT_FOUND`, cần bổ sung các dependency còn thiếu vào `package.json` của service tương ứng.
 
 ## Repository liên quan
 
